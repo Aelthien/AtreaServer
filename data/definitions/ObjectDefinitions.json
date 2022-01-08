@@ -1,0 +1,21 @@
+{
+	"definitions": [
+		{
+			"iD": 0,
+			"name": "Box",
+			"desc": "A box.",
+			"interactions": [
+				[
+					"Use",
+					"Open",
+					"Examine"
+				],
+				[
+					"Use",
+					"Close",
+					"Examine"
+				]
+			]
+		}
+	]
+}
