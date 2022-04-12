@@ -1,17 +1,27 @@
-package atrea.server.game.entity.components;
+package atrea.server.game.entities.components;
 
 import atrea.server.game.content.items.Item;
 import atrea.server.game.content.items.ItemContainer;
 import atrea.server.game.content.items.EEquipmentSlot;
 import atrea.server.game.data.definition.ItemDefinition;
-import atrea.server.game.entity.Entity;
+import lombok.Getter;
+
+import static atrea.server.game.entities.components.EComponentType.*;
 
 public class EquipmentComponent extends EntityComponent {
 
-    private ItemContainer equipment;
+    private @Getter ItemContainer equipment;
+
+    @Override public EComponentType getComponentType() {
+        return EQUIPMENT;
+    }
 
     public EquipmentComponent(Entity parent) {
         super(parent);
+    }
+
+    @Override public void update() {
+
     }
 
     public void addItem(Item item) {

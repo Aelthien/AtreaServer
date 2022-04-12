@@ -1,14 +1,13 @@
-package atrea.server.networking.packet.listener;
+package atrea.server.engine.networking.packet.listener;
 
-import atrea.server.networking.session.PlayerSession;
+import atrea.server.engine.networking.session.Session;
 import io.netty.buffer.ByteBuf;
 
 public class GameLoadedPacketListener implements IPacketListener
 {
     @Override
-    public void processGamePacket(PlayerSession playerSession, ByteBuf buffer) {
-        System.out.println("Client has loaded the game");
-        playerSession.getDatabaseManager().load(playerSession.getPlayer());
-        //GameManager.addNpc(new Entity());
+    public void process(Session session, ByteBuf buffer) {
+        session.setGameLoaded(true);
+        System.out.println("Game has loaded");
     }
 }

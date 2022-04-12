@@ -1,22 +1,53 @@
-package atrea.server.game.entity.components;
+package atrea.server.game.entities.components;
 
-import atrea.server.game.entity.EEffectTarget;
-import atrea.server.game.entity.EValueType;
-import atrea.server.game.entity.Entity;
-import atrea.server.game.entity.EntityStatusEffect;
+import atrea.server.game.entities.EEffectTarget;
+import atrea.server.game.entities.EValueType;
+import atrea.server.game.entities.EntityStatusEffect;
+
 import lombok.Getter;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
+
+import static atrea.server.game.entities.components.EComponentType.*;
 
 public class StatusComponent extends EntityComponent {
+
     private @Getter int health = 100;
     private @Getter int energy = 100;
 
     private @Getter List<EntityStatusEffect> effects = new ArrayList<>();
+    private List<EntityStatusEffect> effectsToRemove = new ArrayList<>();
+
+    @Override public EComponentType getComponentType() {
+        return STATUS;
+    }
 
     public StatusComponent(Entity parent) {
         super(parent);
+    }
+
+    @Override public void update() {
+
+    }
+
+    public void tick() {
+        effects.removeAll(effectsToRemove);
+
+        for (var effect : effects) {
+            if (effect.isCompleted()) {
+                effectsToRemove.add(effect);
+                continue;
+            }
+
+            if (effect.activate()) {
+                applyEffect(effect);
+                effect.reset();
+            }
+
+            effect.tick();
+        }
     }
 
     public void applyEffect(EntityStatusEffect effect) {
@@ -34,13 +65,13 @@ public class StatusComponent extends EntityComponent {
     }
 
     private int calculateFinalValue(int effectedValue, int effectValue, EValueType valueType) {
-        int newValue = 0;
-        boolean positive = effectValue < 0;
+        int newValue = effectedValue;
+        boolean positive = effectValue > 0;
 
         switch (valueType) {
             case PERCENT:
                 float percentage = effectValue / 100;
-                newValue = (int) (positive ? effectedValue + (effectedValue * percentage) : effectedValue - (effectedValue * percentage));
+                newValue = (int) (effectedValue + (effectedValue * percentage));
                 break;
             case ABSOLUTE:
                 newValue = effectValue;
@@ -56,5 +87,19 @@ public class StatusComponent extends EntityComponent {
         }
 
         return newValue;
+    }
+
+    public List<EntityStatusEffect> getEffectsNeedingUpdate() {
+        return effects.stream().filter(effect -> effect.getEffect().isUpdateClient()).collect(Collectors.toList());
+    }
+
+    public StatusComponent setHealth(int health) {
+        this.health = health;
+        return this;
+    }
+
+    public StatusComponent setEnergy(int energy) {
+        this.energy = energy;
+        return this;
     }
 }

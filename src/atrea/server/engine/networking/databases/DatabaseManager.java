@@ -1,30 +1,39 @@
-package atrea.server.engine.net.database;
+package atrea.server.engine.networking.databases;
 
-import atrea.server.game.content.skills.ESkill;
-import atrea.server.game.entities.DatabaseProcedure;
-import atrea.server.engine.entities.Entity;
-import atrea.server.game.entities.components.InventoryComponent;
+import atrea.server.engine.accounts.*;
+import atrea.server.game.entities.components.Entity;
+import atrea.server.game.entities.components.*;
+import atrea.server.game.entities.components.systems.SystemManager;
 import atrea.server.engine.main.GameManager;
-import atrea.server.engine.networking.packet.RegisterDetails;
 import atrea.server.engine.networking.packet.LoginDetails;
+import atrea.server.engine.networking.packet.RegisterDetails;
 import atrea.server.engine.networking.session.LoginResponse;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import atrea.server.engine.networking.session.Session;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.PooledByteBufAllocator;
+import lombok.Setter;
 
-import static atrea.server.engine.net.database.NetworkOpcodes.*;
+import java.io.ByteArrayInputStream;
+import java.nio.charset.Charset;
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
+
+import static atrea.server.engine.networking.databases.NetworkOpcodes.*;
 
 public class DatabaseManager {
+
     private Connection connection;
     private PreparedStatement statement;
     private Entity player;
-
+    private @Setter
+    Session session;
     private int userId;
+    private final SystemManager systemManager;
 
     public DatabaseManager() {
-
+        systemManager = GameManager.getSystemManager();
     }
 
     public void closeConnection() {
@@ -51,45 +60,24 @@ public class DatabaseManager {
         }
     }
 
-    public void save() {
+    public boolean save() {
         openConnection();
 
-        saveCharacter();
-        //saveSkills();
-        saveEquipment();
-        saveInventory();
-        saveBank();
-        savePlayerAppearance();
+        boolean success = saveCharacter();
 
         closeConnection();
+
+        return success;
     }
 
-    private void savePlayerAppearance() {
-    }
-
-    private void saveBank() {
-    }
-
-    private void saveInventory() {
-
-    }
-
-    private void saveEquipment() {
-    }
-
-    public void load(Entity player) {
+    public boolean load(Entity player, CharacterData characterData) {
         this.player = player;
-        player.setId(userId);
 
-        if (loadCharacter()) {
-            //loadSkills();
-            //loadEquipment();
-            loadInventory();
-            //loadBank();
-            //getPlayerAppearance();
-        }
+        boolean success = loadCharacter(characterData);
 
         closeConnection();
+
+        return success;
     }
 
     public void logout() {
@@ -97,8 +85,7 @@ public class DatabaseManager {
 
         openConnection();
 
-        ResultSet rs;
-        String password = null;
+        ResultSet resultSet;
 
         String sql = "SELECT id FROM active_users WHERE id = ?";
 
@@ -106,78 +93,110 @@ public class DatabaseManager {
             statement = connection.prepareStatement(sql);
             statement.setInt(1, userId);
 
-            rs = statement.executeQuery();
-
-            if (rs.next()) {
-
-            }
+            resultSet = statement.executeQuery();
         } catch (SQLException e) {
             e.printStackTrace();
         }
     }
 
     public LoginResponse login(LoginDetails loginPacket) {
+        LoginResponse response = new LoginResponse();
+
         openConnection();
 
-        ResultSet rs;
+        ResultSet resultSet;
 
-        LoginResponse loginResponse = new LoginResponse();
-        int response = 0;
+        int characterSlots = 4;
         String password = null;
         boolean banned = false;
+        EAccountRole role = null;
+        int[] characters = new int[characterSlots];
 
-        String sql = "SELECT id, password, banned FROM users WHERE email = ?";
+        String[] characterColumnNames = new String[characterSlots];
+
+        for (int i = 0; i < characterSlots; i++) {
+            characterColumnNames[i] = "character" + i;
+        }
+
+        String sql = String.format("SELECT id, password, banned, role, %s FROM users WHERE email = ?", String.join(",", characterColumnNames));
 
         try {
             statement = connection.prepareStatement(sql);
             statement.setString(1, loginPacket.getEmail());
 
-            rs = statement.executeQuery();
+            resultSet = statement.executeQuery();
 
-            if (rs.next()) {
-                password = rs.getString("password");
-                userId = rs.getInt("id");
-                banned = rs.getInt("banned") == 1;
-            }
+            if (resultSet.next()) {
+                userId = resultSet.getInt("id");
+                password = resultSet.getString("password");
+                banned = resultSet.getBoolean("banned");
+                role = EAccountRole.getRole(resultSet.getString("role"));
 
-            /*
-            sql = "SELECT user_id FROM active_logins WHERE user_id = ?";
-            statement = connection.prepareStatement(sql);
-            statement.setInt(1, userId);
-            rs = statement.executeQuery();
-
-            if (!rs.next()) {
-                byte[] bytes = new byte[16];
-                SecureRandom.getInstanceStrong().nextBytes(bytes);
-                String key = new String(bytes);
-
-                sql = "INSERT INTO active_logins(user_id, session_key) VALUES(?, ?) ON DUPLICATE KEY DO NOTHING";
-                statement = connection.prepareStatement(sql);
-                statement.setInt(1, userId);
-                statement.setString(2, key);
-                statement.executeUpdate();
-            }
-            else
-              response = ALREADY_LOGGED_IN;
-            */
+                for (int i = 0; i < characterSlots; i++) {
+                    characters[i] = resultSet.getInt("character" + i);
+                }
+            } else
+                response.setCode(INVALID_EMAIL);
 
             if (!password.equals(loginPacket.getPassword()))
-                response = INVALID_INFORMATION;
+                response.setCode(INVALID_INFORMATION);
             else if (banned)
-                response = USER_BANNED;
-            //if server down
-            //response = SERVER_ERROR;
+                response.setCode(USER_BANNED);
             else {
-                loginResponse.setCode(userId);
-                response = LOGIN_SUCCESSFUL;
+                response.setCode(LOGIN_SUCCESSFUL);
+                response.setUserId(userId);
+                CharacterData[] characterDatum = loadCharacters(characters);
+                response.setAccount(new Account(userId, role, characters, characterDatum));
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
 
-        loginResponse.setCode(response);
+        return response;
+    }
 
-        return loginResponse;
+    public CharacterData[] loadCharacters(int[] characterIds) {
+        CharacterData[] characters = new CharacterData[characterIds.length];
+
+        String sql = "SELECT slot, general, world FROM characters WHERE user_id = ? AND id in (?, ?, ?, ?)";
+
+        try {
+            statement = connection.prepareStatement(sql);
+
+            statement.setInt(1, userId);
+
+            for (int i = 0; i < characterIds.length; i++) {
+                statement.setInt(i + 2, characterIds[i]);
+            }
+
+            ResultSet resultSet = statement.executeQuery();
+
+            while (resultSet.next()) {
+                int slot = resultSet.getByte("slot");
+
+                List<Blob> datum = new ArrayList<>();
+
+                datum.add(resultSet.getBlob("general"));
+                /*
+                datum.add(resultSet.getBlob("world"));
+                datum.add(resultSet.getBlob("skills"));
+                datum.add(resultSet.getBlob("inventory"));
+                datum.add(resultSet.getBlob("equipment"));
+                datum.add(resultSet.getBlob("bank"));
+                datum.add(resultSet.getBlob("status"));
+                datum.add(resultSet.getBlob("combat"));
+                datum.add(resultSet.getBlob("abilities"));
+                datum.add(resultSet.getBlob("skill_tree"));
+                datum.add(resultSet.getBlob("quests"));
+                */
+
+                characters[slot] = DataSerialiser.characters.deserialise(characterIds[slot], datum);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return characters;
     }
 
     public int register(RegisterDetails registerDetails) {
@@ -229,64 +248,41 @@ public class DatabaseManager {
         return REGISTRATION_SUCCESSFUL;
     }
 
-    private boolean loadCharacter() {
+    private boolean loadCharacter(CharacterData characterData) {
         boolean success = false;
 
         ResultSet rs;
 
-        String sql = "SELECT id, name, level, clan, posx, posy,"
-                + " height, energy, running, fight_type, retaliate,"
-                + " xp_locked, clanchat"
-                + " FROM characters WHERE user_id = ?";
+        String sql = "SELECT general FROM characters WHERE id = ?";
 
         try {
             statement = connection.prepareStatement(sql);
-            statement.setInt(1, userId);
+            statement.setInt(1, characterData.getId());
 
             rs = statement.executeQuery();
 
             if (rs.next()) {
-                userId = rs.getInt("id");
-                String name = rs.getString("name");
-                int level = rs.getInt("level");
-                int clan = rs.getInt("clan");
-                int posX = rs.getInt("posx");
-                int posY = rs.getInt("posy");
-                int height = rs.getInt("height");
-                int energy = rs.getInt("energy");
-                boolean running = rs.getBoolean("running");
-                boolean retaliate = rs.getBoolean("retaliate");
-                boolean xp_locked = rs.getBoolean("xp_locked");
-                String clanChat = rs.getString("clanChat");
+                ByteBuf buffer = PooledByteBufAllocator.DEFAULT.buffer();
+                Blob blob = rs.getBlob("general");
+                buffer.writeBytes(blob.getBytes(1, (int) blob.length()));
+
+                int nameLength = buffer.readByte();
+                String name = (String) buffer.readCharSequence(nameLength, Charset.defaultCharset());
 
                 player.setName(name);
 
-                //player.setClanChatName(clanchat);
-                //player.getTransform().setPosition(new Position(posX, posY, height));
-                //player.getStatus().setEnergy(energy);
-                //player.setRunning(running);
-                /*player.getCombat().setAutoRetaliate(retaliate);
-                player.setExperienceLocked(xp_locked);
-                player.setHasVengeance(venged);
-                player.getVengeanceTimer().start(last_venge);
-                player.setSpecialPercentage(special_attack);
-                player.getSpecialAttackTimer().start(special_timer);
-                player.setPoisonDamage(poison_damage);
-                player.getCombat().getPoisonImmunityTimer().start(poison_immunity);
-                player.getCombat().getFireImmunityTimer().start(fire_immunity);
-                player.setSkullTimer(skull_timer);
-                player.setSkullType(skull_type);
-                player.setSpellbook(spellbook);
-                player.getCombat().setFightType(fight_type);*/
+                TransformComponent transform = systemManager.getTransformSystem().get(player.getEntityId());
+                StatusComponent status = systemManager.getStatusSystem().get(player.getEntityId());
+                GuildComponent guild = systemManager.getGuildSystem().get(player.getEntityId());
 
-                //MessageSender messageSender = player.getPlayerSession().getMessageSender();
-
-                //messageSender.sendName();
-                //messageSender.sendMove(player.getTransform().getPosition(), true, true);
+                //transform.setPosition(new Position(posX, posY, height), true, true).setNeedsUpdating();
+                //status.setHealth(health).setEnergy(energy).setNeedsUpdating();
 
                 success = true;
+                System.out.println("Successfully loaded character with the id: " + characterData.getId());
             } else {
-                System.out.println("Character not found");
+                success = false;
+                System.out.println("Failed to load character!");
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -295,262 +291,81 @@ public class DatabaseManager {
         return success;
     }
 
-    private boolean loadSkills() {
-        int experience;
-        int skillpoints;
+    /**
+     * Creates a new character in the SQL database.
+     *
+     * @param slot   The index of the character
+     * @param name   The name of the character
+     * @param gender The gender of the character
+     * @return The character data with the id of 1) the key of
+     * the row that the character was inserted or 2) -1 if the
+     * insertion failed.
+     */
+    public CharacterData createCharacter(int slot, String name, EGender gender) {
+        openConnection();
 
-        String[] skillNames = ESkill.getNames();
+        if (session.getAccount().getCharacterIds()[slot] != -1)
+            return null;
 
-        int skillNumber = skillNames.length;
+        String sql = "INSERT INTO characters (user_id, slot, general) VALUES (?, ?, ?)";
 
-        String[] currentLevelLabels = new String[skillNumber];
-        String[] maxLevelLabels = new String[skillNumber];
-
-        int[] maxLevels = new int[skillNumber];
-        int[] currentLevels = new int[skillNumber];
-
-        ResultSet rs;
-
-        String sql = "SELECT ";
-
-        String currentLevelLabel;
-        String maxLevelLabel;
-
-        sql += "experience, skillPoints, ";
-
-        for (int i = 0; i < skillNumber; i++) {
-            maxLevelLabel = skillNames[i] + "_max";
-            maxLevelLabels[i] = maxLevelLabel;
-
-            sql += maxLevelLabel + ", ";
-        }
-
-        for (int i = 0; i < skillNumber; i++) {
-            currentLevelLabel = skillNames[i] + "_current";
-            currentLevelLabels[i] = currentLevelLabel;
-
-            sql += currentLevelLabel;
-
-            if (i != skillNumber - 1)
-                sql += ", ";
-            else
-                sql += " ";
-        }
-
-        sql += "FROM skills WHERE user_id = ?";
+        CharacterData characterData = CharacterData.create(name, gender);
 
         try {
-            statement = connection.prepareStatement(sql);
+            List<byte[]> dataList = DataSerialiser.characters.serialise(characterData);
+
+            statement = connection.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS);
+
+            statement.getGeneratedKeys();
 
             statement.setInt(1, userId);
+            statement.setInt(2, slot);
+            statement.setBlob(3, new ByteArrayInputStream(dataList.get(0)));
 
-            System.out.println(userId);
-            rs = statement.executeQuery();
+            if (statement.executeUpdate() != 0) {
+                ResultSet resultSet = statement.getGeneratedKeys();
 
-            if (rs.next()) {
-                experience = rs.getInt("experience");
-                skillpoints = rs.getInt("skillPoints");
-
-                for (int i = 0; i < skillNumber; i++) {
-                    maxLevels[i] = rs.getInt(maxLevelLabels[i]);
-                }
-
-                for (int i = 0; i < skillNumber; i++) {
-                    currentLevels[i] = rs.getInt(currentLevelLabels[i]);
-                }
-                /*
-                player.getSkillManager().setAllMaxLevels(maxLevels);
-                player.getSkillManager().setAllCurrentLevels(currentLevels);
-                player.getSkillManager().setExperience(experience);
-                player.getSkillManager().setSkillPoints(skillPoints);*/
+                if (resultSet.next()) {
+                    characterData.setId((int) resultSet.getLong(1));
+                } else
+                    return null;
             }
-        } catch (SQLException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
 
-        return true;
-    }
+            session.getAccount().getCharacters()[slot] = characterData;
 
-    private void loadEquipment() {
-        ResultSet rs;
+            sql = String.format("UPDATE users SET %s = ? WHERE id = ?", "character" + slot);
 
-        String sql = "SELECT item_id, amount, slot FROM equipment WHERE user_id = ?";
-
-        try {
             statement = connection.prepareStatement(sql);
-            statement.setInt(1, userId);
 
-            rs = statement.executeQuery();
+            statement.setInt(1, characterData.getId());
+            statement.setInt(2, userId);
 
-            int item;
-            int amount;
-            int slot;
-
-            while (rs.next()) {
-                item = rs.getInt("item_id");
-                amount = rs.getInt("amount");
-                slot = rs.getInt("slot");
-
-                //player.getEquipment().addItem(new Item(item, amount));
-            }
+            statement.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
         }
-    }
 
-    private void getPlayerAppearance() {
-        ResultSet rs;
+        closeConnection();
 
-        String sql = "SELECT gender, head, chest, arms, hands, legs, feet, beard,"
-                + " hair_colour, chest_colour, leg_colour, feet_colour, skin_colour"
-                + " FROM appearance WHERE user_id = ?";
-
-        int gender, head, chest, arms, hands, legs, feet, beard, hair_colour,
-                chest_colour, leg_colour, feet_colour, skin_colour;
-
-        int[] array;
-
-        try {
-            statement = connection.prepareStatement(sql);
-
-            statement.setInt(1, userId);
-
-            rs = statement.executeQuery();
-
-            if (rs.next()) {
-                gender = rs.getInt("gender");
-                head = rs.getInt("head");
-                chest = rs.getInt("chest");
-                arms = rs.getInt("arms");
-                hands = rs.getInt("hands");
-                legs = rs.getInt("legs");
-                feet = rs.getInt("feet");
-                beard = rs.getInt("beard");
-                hair_colour = rs.getInt("hair_colour");
-                chest_colour = rs.getInt("chest_colour");
-                leg_colour = rs.getInt("leg_colour");
-                feet_colour = rs.getInt("feet_colour");
-                skin_colour = rs.getInt("skin_colour");
-
-                array = new int[]{gender, head, chest, arms, hands, legs,
-                        feet, beard, hair_colour, chest_colour, leg_colour,
-                        feet_colour, skin_colour};
-
-                //player.getAppearance().set(array);
-            }
-        } catch (SQLException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-    }
-
-    private void loadInventory() {
-        ResultSet rs;
-
-        String sql = "SELECT item_id, amount, slot FROM inventory WHERE user_id = ?";
-
-        try {
-            statement = connection.prepareStatement(sql);
-            statement.setInt(1, userId);
-
-            rs = statement.executeQuery();
-
-            int id;
-            int amount;
-            int slot;
-            int quality;
-
-            InventoryComponent inventory;// = player.getComponent(InventoryComponent.class);
-
-            while (rs.next()) {
-                id = rs.getInt("item_id");
-                amount = rs.getInt("amount");
-                slot = rs.getInt("slot");
-
-                //inventory.setItem(new Item(id, amount), slot, false);
-            }
-
-            GameManager.getPlayerSessionManager().getPlayerSession(player).getMessageSender().sendInventory();
-
-        } catch (SQLException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-    }
-
-    private void loadBank() {
-        ResultSet rs;
-
-        String sql = "SELECT item_id, amount, slot FROM bank WHERE user_id = ?";
-
-        try {
-            statement = connection.prepareStatement(sql);
-            statement.setInt(1, userId);
-
-            rs = statement.executeQuery();
-
-            int item;
-            int amount;
-            int slot;
-            int tab;
-
-            //Bank[] banks = player.getBanks();
-
-            while (rs.next()) {
-                item = rs.getInt("item_id");
-                amount = rs.getInt("amount");
-                slot = rs.getInt("slot");
-                tab = rs.getInt("tab");
-
-                //banks[tab].addToSlot(new Item(item, amount), slot, false);
-            }
-        } catch (SQLException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
+        return characterData;
     }
 
     private boolean saveCharacter() {
-        String sql = "UPDATE characters SET ";
-
-        String[] values = {
-                "name", "guild", "posx", "posy", "height", "energy",
-                "running", "retaliate", "xp_locked", "chat"
-        };
-
-        int amount = values.length;
-
-        for (int i = 0; i < amount; i++) {
-            sql += values[i] + " = ?";
-
-            if (i == amount - 1)
-                sql += ", ";
-            else
-                sql += " ";
-        }
-
-        sql += "WHERE id = ?";
-
-        String name = player.getName();
-        int guild = 0;
-        int posX = 0;//player.getTransform().getPosition().getX();
-        int posY = 0;//player.getTransform().getPosition().getY();
+        String sql = "UPDATE characters SET general, skills, inventory, equipment WHERE userId = ?";
 
         try {
             statement = connection.prepareStatement(sql);
 
-            statement.setString(1, name);
-            statement.setInt(2, guild);
-            statement.setInt(3, posX);
-            statement.setInt(4, posY);
-            statement.setInt(23, userId);
+            //statement.setBlob(1, DatabaseSerializer.characters.serialise(player));
+            statement.setBlob(2, DataSerialiser.skills.serialiseAll(systemManager.getSkillSystem().get(player.getEntityId()).getSkills()));
+            statement.setBlob(3, DataSerialiser.items.serialiseAll(systemManager.getInventorySystem().get(player.getEntityId()).getInventory().getItems()));
+            statement.setBlob(4, DataSerialiser.items.serialiseAll(systemManager.getEquipmentSystem().get(player.getEntityId()).getEquipment().getItems()));
+            statement.setInt(5, userId);
 
             int response = statement.executeUpdate();
 
             if (response == 0)
                 return false;
-
         } catch (SQLException e) {
             return false;
         }
@@ -558,72 +373,8 @@ public class DatabaseManager {
         return true;
     }
 
-    private boolean saveSkills() {
-        /*String[] skillNames = Skill.getNames();
-        int[] experience;
-        int[] currentLevels;
-
-        experience = player.getSkillManager().getSkills().getExperience();
-        currentLevels = player.getSkillManager().getSkills().getLevel();
-
-        int skillNumber = skillNames.length;
-
-        String sql = "UPDATE skills SET ";
-
-        for (int i = 0; i < skillNumber; i++)
-        {
-            sql += skillNames[i] + "_xp = ?";
-
-            sql += ", ";
-        }
-
-        for (int i = 0; i < skillNumber; i++)
-        {
-            sql += skillNames[i] + "_current = ?";
-
-            if (i != skillNumber - 1)
-                sql += ", ";
-            else
-                sql += " ";
-        }
-
-        sql += "WHERE id = ?";
-
-        try {
-            statement = connection.prepareStatement(sql);
-
-            for (int i = 0; i < skillNumber; i++)
-            {
-                statement.setInt(i + 1, experience[i]);
-            }
-
-            for (int i = skillNumber; i < skillNumber + skillNumber; i++)
-            {
-                statement.setInt(i + 1, currentLevels[i - skillNumber]);
-            }
-
-            statement.setInt(47, userId);
-
-            int response = statement.executeUpdate();
-
-            if (response == 0)
-            {
-                System.out.println("Failed to save skills.");
-                return false;
-            }
-
-        } catch (SQLException e) {
-            System.out.println("Failed to save skills.");
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-            return false;
-        }
-*/
-        return true;
-    }
-
-    public void save(DatabaseProcedure databaseProcedure) {
-        openConnection();
-        databaseProcedure.save(connection);
+    public Account loadAccount(int userId) {
+        String sql = "SELECT ";
+        return null;
     }
 }

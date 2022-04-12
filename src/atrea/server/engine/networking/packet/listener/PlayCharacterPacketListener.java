@@ -1,42 +1,43 @@
 package atrea.server.engine.networking.packet.listener;
 
 import atrea.server.engine.accounts.CharacterData;
-import atrea.server.engine.networking.databases.ECharacterCreationStatus;
-import atrea.server.engine.networking.databases.EGender;
-import atrea.server.engine.networking.packet.outgoing.CharacterCreationResponsePacket;
-import atrea.server.engine.networking.packet.outgoing.UpdateCharactersPacket;
+import atrea.server.game.entities.components.Entity;
+import atrea.server.engine.main.GameManager;
+import atrea.server.engine.networking.packet.outgoing.EnterGamePacket;
+import atrea.server.engine.networking.session.ESessionState;
 import atrea.server.engine.networking.session.Session;
 import io.netty.buffer.ByteBuf;
 
-import java.nio.charset.Charset;
-import java.sql.SQLException;
-
-import static atrea.server.engine.networking.databases.ECharacterCreationStatus.*;
-import static atrea.server.engine.networking.databases.EGender.*;
-
-public class CreateCharacterPacketListener implements IPacketListener {
+public class PlayCharacterPacketListener implements IPacketListener {
 
     @Override
     public void process(Session session, ByteBuf buffer) {
-        int index = buffer.readByte();
+        int characterSlot = buffer.readByte();
 
-        int nameLength = buffer.readByte();
+        CharacterData character = session.getAccount().getCharacters()[characterSlot];
 
-        String name  = buffer.readCharSequence(nameLength, Charset.defaultCharset()).toString();
+        ESessionState state = session.getSessionState();
 
-        EGender gender = buffer.readByte() == 0 ? MALE : FEMALE;
+        /*
+        boolean invalidRequest = state == IN_GAME
+                || state == ENTERING_GAME
+                || state == REQUESTED_LOG_OUT
+                || state == LOGGING_OUT
+                || state == LOGGED_OUT
+                || state == LOGGED_IN
+                || state == LOGGING_IN;
+        */
 
-        CharacterData characterData = session.getDatabaseManager().createCharacter(index, name, gender);
+        boolean canEnter = character != null
+                && session.isLoggedIn();
 
-        ECharacterCreationStatus creationStatus;
-
-        if (characterData != null) {
-            creationStatus = SUCCESS;
-            session.getMessageSender().send(new UpdateCharactersPacket(session.getAccount().getCharacters()));
-        } else {
-            creationStatus = FAIL;
-        }
-
-        session.getMessageSender().send(new CharacterCreationResponsePacket(creationStatus));
+        if (canEnter) {
+            session.getMessageSender().send(new EnterGamePacket(true));
+            session.getAccount().setCurrentCharacterData(character);
+            Entity player = GameManager.getEntityManager().createPlayer();
+            session.getAccount().setCurrentCharacter(player);
+            session.getDatabaseManager().load(player, character);
+        } else
+            session.getMessageSender().sendLogOut();
     }
 }

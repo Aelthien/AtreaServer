@@ -1,4 +1,4 @@
-package atrea.game.content.skills;
+package atrea.server.game.content.skills;
 
 import lombok.Getter;
 
@@ -15,8 +15,7 @@ public enum ESkill {
     MINING(9,"mining"),
     SMITHING(10,"smithing"),
     WOODWORKING(11,"woodworking"),
-    LARCENY(12,"larceny"),
-    ;
+    LARCENY(12,"larceny");
 
     private @Getter int index;
     private @Getter String name;
@@ -39,8 +38,7 @@ public enum ESkill {
         }
     }
 
-    public ESkill getSkill(int index)
-    {
+    public static ESkill getSkill(int index) {
         for (ESkill skill : ESkill.values()) {
             if (skill.index == index)
                 return skill;

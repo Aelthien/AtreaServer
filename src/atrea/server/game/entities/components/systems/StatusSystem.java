@@ -1,13 +1,10 @@
-package atrea.server.game.entity.components.systems;
+package atrea.server.game.entities.components.systems;
 
-import atrea.server.game.entity.components.StatusComponent;
+import atrea.server.game.entities.components.Entity;
+import atrea.server.game.data.definition.ComponentDefinition;
+import atrea.server.game.entities.components.StatusComponent;
 
-import java.util.HashMap;
-import java.util.Map;
-
-public class StatusSystem extends ComponentSystem {
-
-    private Map<Integer, StatusComponent> components = new HashMap<>();
+public class StatusSystem extends ComponentSystem<StatusComponent> {
 
     private CombatSystem combatSystem;
 
@@ -15,7 +12,13 @@ public class StatusSystem extends ComponentSystem {
         this.combatSystem = combatSystem;
     }
 
-    @Override public void update() {
+    @Override public void addComponent(ComponentDefinition definition, Entity entity) {
+        components.put(entity.getEntityId(), new StatusComponent(entity));
+    }
 
+    @Override public void update() {
+        for (var status : components.values()) {
+            status.tick();
+        }
     }
 }

@@ -1,9 +1,9 @@
-package atrea.game.data.definition;
+package atrea.server.game.data.definition;
 
-import atrea.game.content.items.Item;
-import atrea.game.content.items.RequiredItem;
-import atrea.game.content.items.RequiredSkill;
-import atrea.game.content.skills.ExperienceAward;
+import atrea.server.game.content.items.Item;
+import atrea.server.game.content.items.RequiredItem;
+import atrea.server.game.content.items.RequiredSkill;
+import atrea.server.game.content.skills.ExperienceAward;
 
 import lombok.Getter;
 import lombok.Setter;

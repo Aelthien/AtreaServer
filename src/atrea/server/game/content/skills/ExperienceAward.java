@@ -1,4 +1,4 @@
-package atrea.game.content.skills;
+package atrea.server.game.content.skills;
 
 import lombok.Getter;
 import lombok.Setter;

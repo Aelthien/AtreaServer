@@ -1,4 +1,4 @@
-package atrea.game.content.items;
+package atrea.server.game.content.items;
 
 public enum  EEquipmentSlot {
     HEAD,

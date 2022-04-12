@@ -1,12 +1,10 @@
-package atrea.server.engine.entities.components;
+package atrea.server.game.entities.components;
 
-import atrea.server.engine.entities.Entity;
 import atrea.server.engine.utilities.Position;
-import atrea.server.game.entities.components.EFacing;
 import lombok.Getter;
 import lombok.Setter;
 
-import static atrea.server.engine.entities.components.EComponentType.*;
+import static atrea.server.game.entities.components.EComponentType.*;
 
 @Getter @Setter
 public class TransformComponent extends EntityComponent {
@@ -27,10 +25,16 @@ public class TransformComponent extends EntityComponent {
         this.position = new Position();
     }
 
+    @Override public void update() {
+
+    }
+
     public TransformComponent setPosition(Position position, boolean teleport, boolean pathEnd) {
         this.position = position;
         this.teleport = teleport;
         this.pathEnd = pathEnd;
+
+        parent.addUpdateFlag(getComponentType());
 
         return this;
     }

@@ -1,4 +1,4 @@
-package atrea.game.content.guilds;
+package atrea.server.game.content.guilds;
 
 import lombok.Getter;
 import lombok.Setter;

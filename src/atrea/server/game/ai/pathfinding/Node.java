@@ -1,6 +1,6 @@
-package atrea.game.ai.pathfinding;
+package atrea.server.game.ai.pathfinding;
 
-import atrea.main.Position;
+import atrea.server.engine.utilities.Position;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -28,18 +28,18 @@ public class Node {
         Node node = (Node) o;
         return position.getX() == node.position.getX()
                 && position.getY() == node.position.getY()
-                && position.getLevel() == node.position.getLevel();
+                && position.getHeight() == node.position.getHeight();
     }
 
     @Override public int hashCode() {
-        return Objects.hash(position.getX(), position.getY(), position.getLevel());
+        return Objects.hash(position.getX(), position.getY(), position.getHeight());
     }
 
     @Override public String toString() {
         return "Node{" +
                 "x=" + position.getX() +
                 ", y=" + position.getY() +
-                ", level=" + position.getLevel() +
+                ", level=" + position.getHeight() +
                 '}';
     }
 }

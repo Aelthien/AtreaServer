@@ -1,4 +1,4 @@
-package atrea.game.content.spells;
+package atrea.server.game.content.spells;
 
 public enum EAbilityType {
 

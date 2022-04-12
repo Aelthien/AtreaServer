@@ -1,4 +1,4 @@
-package atrea.server.game.world;
+package atrea.server.engine.world;
 
 public enum ETileType {
 

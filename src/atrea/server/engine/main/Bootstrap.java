@@ -1,7 +1,6 @@
-package atrea.server;
+package atrea.server.engine.main;
 
-import atrea.server.game.GameEngine;
-import atrea.server.engine.networking.io.ChannelPipelineHandler;
+import atrea.server.engine.networking.channels.ChannelPipelineHandler;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;

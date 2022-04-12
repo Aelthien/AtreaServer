@@ -1,7 +1,6 @@
-package atrea.game.content.items;
+package atrea.server.game.content.items;
 
-import atrea.game.data.definition.ItemDefinition;
-import atrea.game.world.GameManager;
+import atrea.server.game.data.definition.ItemDefinition;
 import lombok.Getter;
 
 import java.util.ArrayList;
@@ -20,82 +19,53 @@ public class ItemContainer {
         items = new Item[size];
 
         for (int i = 0; i < size; i++) {
-            items[i] = new Item(-1, 0);
+            items[i] = new Item(-1, 0, true);
         }
     }
 
+    public int findPartialStack(Item item, int maxStack) {
+        for (int i = 0; i < size; i++) {
+            if (items[i].equals(item) && items[i].getAmount() < maxStack)
+                return i;
+        }
+
+        return -1;
+    }
+
+    private boolean addItemToNewStack(Item item) {
+        int emptySlot = findEmptySlot();
+
+        if (emptySlot == -1)
+            return false;
+
+        items[item.getSlot()].reset();
+        setItem(item, emptySlot);
+
+        return true;
+    }
+
     public boolean addItem(Item item) {
-        if (!item.isValid())
+        if (item == null || !item.isValid())
             return false;
 
         ItemDefinition definition = ItemDefinition.getDefinition(item.getId());
 
         if (definition.isStackable()) {
-            int maxStack = definition.getMaxStack();
-            int index = -1;
+            int index = findPartialStack(item, definition.getMaxStack());
 
-            for (int i = 0; i < items.length; i++) {
-                addItemToStack(item, i, maxStack);
+            if (index != -1) {
+                Item itemToAddTo = items[index];
 
-                index = i;
-                break;
+                int newAmount = itemToAddTo.getAmount() + item.getAmount();
+
+
+            } else {
+                return addItemToNewStack(item);
             }
-
-            if (index == -1) {
-                int empty = emptySlot();
-
-                if (empty != -1) {
-                    //addItemToSlot(item, empty);
-                    return true;
-                }
-            }
-
-            int totalAmount = items[index].getAmount() + item.getAmount();
-            int remainder;
-
-            if (totalAmount > maxStack) {
-                items[index].setAmount(maxStack);
-
-                remainder = totalAmount - maxStack;
-
-                System.out.println(totalAmount + " " + remainder);
-
-                addItem(new Item(item.getId(), remainder));
-            }
-
-            if (totalAmount == maxStack) {
-                items[index].setAmount(maxStack);
-
-                //if (refresh)
-                //    refreshItems();
-
-                return true;
-            }
-
-            if (totalAmount < maxStack) {
-                items[index].setAmount(totalAmount);
-
-                //if (refresh)
-                //    refreshItems();
-
-                return true;
-            }
-
-            /*if (index == -1) {
-                if(getPlayer() != null) {
-                    getPlayer().getPacketSender().sendMessage("You couldn't hold all those items.");
-                }
-
-                if (refresh)
-                    refreshItems();
-                return this;
-            }*/
         } else {
-            int empty = emptySlot();
-
-            if (empty != -1)
-                setItem(item, empty);
+            return addItemToNewStack(item);
         }
+
         return true;
     }
 
@@ -111,9 +81,9 @@ public class ItemContainer {
         return false;
     }
 
-    public int emptySlot() {
+    public int findEmptySlot() {
         for (int i = 0; i < size; i++) {
-            if (items[i].getId() == -1) {
+            if (items[i] == null) {
                 return i;
             }
         }
@@ -150,7 +120,6 @@ public class ItemContainer {
     public boolean swapToContainer(ItemContainer from, int fromSlot, int toSlot) {
         Item fromItem = from.getItem(fromSlot);
 
-
         return false;
     }
 
@@ -170,8 +139,8 @@ public class ItemContainer {
 
         ItemDefinition definition = ItemDefinition.getDefinition(item1.getId());
 
-        if (item1.getId() != item2.getId()) {
-            items[slot1].reset();
+        if (!item1.equals(item2)) {
+            items[slot1] = item2;
             items[slot2] = item1;
 
             return true;
@@ -181,7 +150,7 @@ public class ItemContainer {
     }
 
     public boolean addItemToStack(Item item, int slot, int maxStack) {
-        Item itemToAddTo = items[slot];
+        Item itemToAddTo = items[findPartialStack(item, maxStack)];
 
         if (itemToAddTo.getAmount() == maxStack)
             return false;
@@ -190,20 +159,16 @@ public class ItemContainer {
 
         if (newAmount <= maxStack) {
             items[slot].setAmount(newAmount);
-        }
-
-        if (newAmount > maxStack) {
-            int remaining = newAmount - maxStack;
-            item.setAmount(maxStack);
-
-            addItem(new Item(item.getId(), remaining));
+        } else if (newAmount > maxStack) {
+            item.setAmount(newAmount - maxStack);
+            return false;
         }
 
         return true;
     }
 
     public boolean addItem(int id, int amount) {
-        return addItem(new Item(id, amount));
+        return addItem(new Item(id, amount, true));
     }
 
     public boolean removeItem(int id, int amount, boolean refresh) {
@@ -235,10 +200,7 @@ public class ItemContainer {
     }
 
     public boolean setItem(Item item, int slot) {
-        if (item == null)
-            return false;
-
-        if (items == null)
+        if (!item.isValid())
             return false;
 
         items[slot] = item;
@@ -251,7 +213,7 @@ public class ItemContainer {
     }
 
     public boolean isEmpty() {
-        return emptySlot() == -1;
+        return findEmptySlot() == -1;
     }
 
     public enum EContainerType {

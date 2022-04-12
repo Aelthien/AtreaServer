@@ -1,8 +1,8 @@
-package atrea.server.engine.entities.systems;
+package atrea.server.game.entities.components.systems;
 
-import atrea.server.engine.entities.Entity;
-import atrea.server.engine.entities.components.MovementComponent;
-import atrea.server.engine.entities.components.TransformComponent;
+import atrea.server.game.entities.components.Entity;
+import atrea.server.game.entities.components.MovementComponent;
+import atrea.server.game.entities.components.TransformComponent;
 import atrea.server.game.ai.Pathfinder;
 import atrea.server.engine.utilities.Position;
 import atrea.server.game.data.definition.ComponentDefinition;
@@ -30,7 +30,7 @@ public class MovementSystem extends ComponentSystem<MovementComponent> {
             if (component.getTicksRemaining() == 0)
                 transformSystem.get(component.getParent().getEntityId()).setPosition(component.getNextPosition(), false, false);
             else
-                component.tick();
+                component.update();
         }
     }
 

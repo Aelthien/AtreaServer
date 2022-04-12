@@ -1,4 +1,4 @@
-package atrea.server.engine.networking;
+package atrea.server.game.userinterfaces;
 
 public class WidgetCodes
 {

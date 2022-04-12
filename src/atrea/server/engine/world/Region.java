@@ -1,4 +1,4 @@
-package atrea.server.game.world;
+package atrea.server.engine.world;
 
 import atrea.server.game.ai.pathfinding.Node;
 import atrea.server.game.ai.pathfinding.Tile;
@@ -39,7 +39,7 @@ public class Region {
     }
 
     public Tile getTile(Position position) {
-        return getTile(position.getX(), position.getY(), position.getLevel());
+        return getTile(position.getX(), position.getY(), position.getHeight());
     }
 
     public List<Node> getNeighbours(Node node) {
@@ -55,7 +55,7 @@ public class Region {
                 int checkY = node.getPosition().getY() + y;
 
                 if (checkX >= 0 && checkX < REGION_SIZE && checkY >= 0 && checkY < REGION_SIZE) {
-                    Node neighbour = new Node(getTile(checkX, checkY, node.getPosition().getLevel()));
+                    Node neighbour = new Node(getTile(checkX, checkY, node.getPosition().getHeight()));
                     neighbours.add(neighbour);
                 }
             }

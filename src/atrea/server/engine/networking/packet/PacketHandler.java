@@ -1,7 +1,8 @@
-package atrea.server.networking.packet;
+package atrea.server.engine.networking.packet;
 
-import atrea.server.game.world.GameManager;
-import atrea.server.networking.session.PlayerSession;
+import atrea.server.engine.main.GameManager;
+import atrea.server.engine.networking.packet.incoming.IncomingPacket;
+import atrea.server.engine.networking.session.Session;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
@@ -10,7 +11,7 @@ import io.netty.util.ReferenceCountUtil;
 
 import java.sql.SQLException;
 
-import static atrea.server.networking.packet.IncomingPacketConstants.*;
+import static atrea.server.engine.networking.packet.incoming.IncomingPacketConstants.*;
 
 @Sharable
 public class PacketHandler extends SimpleChannelInboundHandler<ByteBuf> {
@@ -18,9 +19,9 @@ public class PacketHandler extends SimpleChannelInboundHandler<ByteBuf> {
     protected void channelRead0(ChannelHandlerContext ctx, ByteBuf msg) throws SQLException {
         msg.retain();
 
-        PlayerSession playerSession = ctx.channel().attr(GameManager.getPlayerSessionManager().getSessionKey()).get();
+        Session session = ctx.channel().attr(GameManager.getSessionManager().getSessionKey()).get();
         
-        if (playerSession == null)
+        if (session == null)
             throw new IllegalStateException("session == null");
 
         int size = msg.readInt();
@@ -29,17 +30,13 @@ public class PacketHandler extends SimpleChannelInboundHandler<ByteBuf> {
         ByteBuf buffer = msg.slice(5, size);
         buffer.retain();
 
-        if (code == PING)
-            playerSession.getMessageSender().sendPing();
-        else if (code == LOG_IN)
-            playerSession.authorize(new LoginDetails(ctx, buffer));
+        //if (code == PING)
+        if (code == LOG_IN)
+            session.authorize(new LoginDetails(ctx, buffer));
         else if (code == REGISTRATION)
-            playerSession.register(new RegisterDetails(ctx, buffer));
-        else {
-            playerSession.queuePacket(new GamePacket(code, buffer));
-        }
-
-        System.out.println(code);
+            session.register(new RegisterDetails(ctx, buffer));
+        else
+            session.queuePacket(new IncomingPacket(code, buffer));
 
         ReferenceCountUtil.release(msg);
     }

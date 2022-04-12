@@ -1,22 +1,22 @@
-package atrea.server.networking.packet.listener;
+package atrea.server.engine.networking.packet.listener;
 
-import atrea.server.game.world.GameManager;
-import atrea.server.utilities.Position;
-import atrea.server.networking.session.PlayerSession;
+import atrea.server.engine.main.GameManager;
+import atrea.server.engine.utilities.Position;
+import atrea.server.engine.networking.session.Session;
 import io.netty.buffer.ByteBuf;
 import io.netty.util.ReferenceCountUtil;
 
 public class TileClickListener implements IPacketListener {
     @Override
-    public void processGamePacket(PlayerSession playerSession, ByteBuf buffer) {
+    public void process(Session session, ByteBuf buffer) {
         int x = buffer.readInt();
         int y = buffer.readInt();
 
         System.out.println("Received: " + x + " " + y + " tile");
 
-        int entityId = playerSession.getPlayer().getEntityId();
+        int entityId = session.getAccount().getCurrentCharacter().getEntityId();
 
-        GameManager.getEntityManager()
+        GameManager.getSystemManager()
                 .getMovementSystem()
                 .moveEntity(entityId, new Position(x, y), true);
 

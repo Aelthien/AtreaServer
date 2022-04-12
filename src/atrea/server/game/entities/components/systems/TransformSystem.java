@@ -1,7 +1,7 @@
-package atrea.server.engine.entities.systems;
+package atrea.server.game.entities.components.systems;
 
-import atrea.server.engine.entities.Entity;
-import atrea.server.engine.entities.components.TransformComponent;
+import atrea.server.game.entities.components.Entity;
+import atrea.server.game.entities.components.TransformComponent;
 import atrea.server.engine.main.GameManager;
 import atrea.server.game.data.definition.ComponentDefinition;
 
@@ -21,20 +21,28 @@ public class TransformSystem extends ComponentSystem<TransformComponent> {
         TransformComponent transform = components.get(entity.getEntityId());
         TransformComponent otherTransform = components.get(other.getEntityId());
 
+        if (transform == null || otherTransform == null)
+            return false;
+
         return transform.getPosition().isWithinRange(otherTransform.getPosition(), range);
+    }
+
+    public List<Entity> getLocalEntities(int entityId) {
+        return getLocalEntities(components.get(entityId));
     }
 
     public List<Entity> getLocalEntities(TransformComponent transform) {
         List<Entity> localEntities = new ArrayList<>();
 
         for (var transformComponent : components.values()) {
-            if (transformComponent == transform)
-                continue;
-
             if (transformComponent.getPosition().isWithinRange(transform.getPosition(), 50))
                 localEntities.add(GameManager.getEntityManager().getEntity(transformComponent.getId()));
         }
 
         return localEntities;
+    }
+
+    public void setTransform(int entityId, int x, int y, int level) {
+        TransformComponent component = components
     }
 }

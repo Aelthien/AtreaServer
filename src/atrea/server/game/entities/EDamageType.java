@@ -1,4 +1,4 @@
-package atrea.server.game.entity;
+package atrea.server.game.entities;
 
 public enum EDamageType {
     PIERCE,

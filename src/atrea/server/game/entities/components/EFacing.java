@@ -1,4 +1,4 @@
-package atrea.server.game.entity.components;
+package atrea.server.game.entities.components;
 
 public enum EFacing {
 

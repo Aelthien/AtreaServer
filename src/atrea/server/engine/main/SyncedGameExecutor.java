@@ -1,4 +1,4 @@
-package atrea.server.game;
+package atrea.server.engine.main;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 

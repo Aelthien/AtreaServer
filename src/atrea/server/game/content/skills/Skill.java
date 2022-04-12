@@ -1,4 +1,4 @@
-package atrea.game.content.skills;
+package atrea.server.game.content.skills;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -15,11 +15,15 @@ public class Skill {
     private @Getter @Setter int experience;
     private @Getter @Setter boolean experienceLocked;
 
-    public Skill(ESkill skill, boolean minorSkill) {
+    private @Getter @Setter boolean needsUpdate;
+
+    public Skill(ESkill skill, int currentLevel, int maxLevel, int experience, boolean minorSkill, boolean experienceLocked) {
         this.skill = skill;
-        this.maxLevel = 1;
-        this.currentLevel = 1;
+        this.currentLevel = currentLevel;
+        this.maxLevel = maxLevel;
+        this.experience = experience;
         this.minorSkill = minorSkill;
+        this.experienceLocked = experienceLocked;
     }
 
     public void addExperience(int amount) {

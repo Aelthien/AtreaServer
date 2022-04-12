@@ -1,8 +1,8 @@
-package atrea.game.data.definition;
+package atrea.server.game.data.definition;
 
-import atrea.game.content.items.EEquipmentSlot;
-import atrea.game.content.items.EItemType;
-import atrea.game.entity.EntityStatusEffect;
+import atrea.server.game.content.items.EEquipmentSlot;
+import atrea.server.game.content.items.EItemType;
+import atrea.server.game.entities.EntityStatusEffect;
 import lombok.Getter;
 
 import java.util.ArrayList;

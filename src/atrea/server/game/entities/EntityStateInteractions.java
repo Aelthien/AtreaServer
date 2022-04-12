@@ -1,4 +1,4 @@
-package atrea.server.game.entity;
+package atrea.server.game.entities;
 
 import atrea.server.game.content.interactions.EInteractionOption;
 import lombok.Getter;

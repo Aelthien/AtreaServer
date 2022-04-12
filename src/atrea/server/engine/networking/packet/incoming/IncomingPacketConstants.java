@@ -1,4 +1,4 @@
-package atrea.server.engine.networking.packet;
+package atrea.server.engine.networking.packet.incoming;
 
 public class IncomingPacketConstants {
 
@@ -7,6 +7,7 @@ public class IncomingPacketConstants {
     public static int REGISTRATION = 2;
     public static int GAME_LOADED = 3;
     public static int CREATE_CHARACTER = 4;
+    public static int PLAY_CHARACTER = 5;
 
     public static int CHAT_MESSAGE = 11;
 

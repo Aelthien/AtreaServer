@@ -1,0 +1,13 @@
+[
+	{
+		"id": 0,
+		"name": "Box",
+		"description": "A box.",
+		"entityType": "Object",
+		"size": {
+			"x": 1,
+			"y": 1
+		},
+		"components": []
+	}
+]

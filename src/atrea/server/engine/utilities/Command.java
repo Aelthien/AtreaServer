@@ -1,4 +1,4 @@
-package atrea.server.engine.networking;
+package atrea.server.engine.utilities;
 
 import lombok.Getter;
 

@@ -1,10 +1,7 @@
-package atrea.server.game.entity.components;
+package atrea.server.game.entities.components;
 
 import atrea.server.game.content.items.Item;
 import atrea.server.game.content.items.ItemContainer;
-import atrea.server.game.entity.EEntityType;
-import atrea.server.game.entity.Entity;
-import atrea.server.game.world.GameManager;
 import lombok.Getter;
 
 import static atrea.server.game.content.items.ItemContainer.EContainerType.INVENTORY;
@@ -13,32 +10,25 @@ public class InventoryComponent extends EntityComponent {
 
     private @Getter ItemContainer inventory;
 
+    @Override public EComponentType getComponentType() {
+        return EComponentType.INVENTORY;
+    }
+
     public InventoryComponent(Entity parent) {
         super(parent);
         inventory = new ItemContainer(25, INVENTORY);
     }
 
+    @Override public void update() {
+
+    }
+
     public boolean addItem(Item item, boolean refresh) {
-        if (inventory.addItem(item)) {
-            if (refresh && parent != null)
-                GameManager.getPlayerSessionManager().getPlayerSession(parent).getMessageSender().sendItem(item, -1, INVENTORY);
-
-            return true;
-        }
-
-        return false;
+        return inventory.addItem(item);
     }
 
     public boolean setItem(Item item, int slot, boolean refresh) {
-
-        if (inventory.setItem(item, slot)) {
-            if (parent.getEntityType() == EEntityType.Player && refresh)
-                GameManager.getPlayerSessionManager().getPlayerSession(parent).getMessageSender().sendItem(item, slot, INVENTORY);
-
-            return true;
-        }
-
-        return false;
+        return inventory.setItem(item, slot);
     }
 
     public boolean isEmpty() {

@@ -1,6 +1,6 @@
-package atrea.game.content.items;
+package atrea.server.game.content.items;
 
-import atrea.game.content.skills.ESkill;
+import atrea.server.game.content.skills.ESkill;
 import lombok.Getter;
 import lombok.Setter;
 

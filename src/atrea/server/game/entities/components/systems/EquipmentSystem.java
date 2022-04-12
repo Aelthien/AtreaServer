@@ -1,14 +1,10 @@
-package atrea.server.game.entity.components.systems;
+package atrea.server.game.entities.components.systems;
 
-import atrea.server.game.entity.components.EntityComponent;
-import atrea.server.game.entity.components.EquipmentComponent;
+import atrea.server.game.entities.components.Entity;
+import atrea.server.game.data.definition.ComponentDefinition;
+import atrea.server.game.entities.components.EquipmentComponent;
 
-import java.util.HashMap;
-import java.util.Map;
-
-public class EquipmentSystem extends ComponentSystem {
-
-    private Map<Integer, EquipmentComponent> components = new HashMap<>();
+public class EquipmentSystem extends ComponentSystem<EquipmentComponent> {
 
     private InventorySystem inventorySystem;
     private BankSystem bankSystem;
@@ -23,9 +19,8 @@ public class EquipmentSystem extends ComponentSystem {
         this.statusSystem = statusSystem;
     }
 
-    @Override
-    public void addComponent(EntityComponent component) {
-        components.put(component.getParent().getId(), (EquipmentComponent) component);
+    @Override public void addComponent(ComponentDefinition definition, Entity entity) {
+        components.put(entity.getEntityId(), new EquipmentComponent(entity));
     }
 
     @Override public void update() {

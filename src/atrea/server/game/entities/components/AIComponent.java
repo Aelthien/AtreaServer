@@ -1,8 +1,6 @@
-package atrea.server.engine.entities.components;
+package atrea.server.game.entities.components;
 
-import atrea.server.engine.entities.Entity;
-
-import static atrea.server.engine.entities.components.EComponentType.*;
+import static atrea.server.game.entities.components.EComponentType.*;
 
 public class AIComponent extends EntityComponent {
 
@@ -12,5 +10,9 @@ public class AIComponent extends EntityComponent {
 
     public AIComponent(Entity parent) {
         super(parent);
+    }
+
+    @Override public void update() {
+
     }
 }

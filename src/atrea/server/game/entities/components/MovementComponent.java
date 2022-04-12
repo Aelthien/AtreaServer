@@ -1,6 +1,5 @@
-package atrea.server.engine.entities.components;
+package atrea.server.game.entities.components;
 
-import atrea.server.engine.entities.Entity;
 import atrea.server.engine.utilities.Position;
 import lombok.Getter;
 import lombok.Setter;
@@ -9,7 +8,7 @@ import java.util.ArrayDeque;
 import java.util.List;
 import java.util.Queue;
 
-import static atrea.server.engine.entities.components.EComponentType.*;
+import static atrea.server.game.entities.components.EComponentType.*;
 
 public class MovementComponent extends EntityComponent {
 
@@ -32,7 +31,7 @@ public class MovementComponent extends EntityComponent {
         return !pathPositions.isEmpty();
     }
 
-    public void tick() {
+    public void update() {
         if (ticksRemaining == 0) {
             ticksRemaining = ticksPerMovement;
             return;
@@ -57,11 +56,12 @@ public class MovementComponent extends EntityComponent {
 
     public void setPath(List<Position> pathPositions) {
         this.pathPositions.addAll(pathPositions);
+
+        parent.addUpdateFlag(getComponentType());
     }
 
     public Position getNextPosition() {
         Position position = pathPositions.poll();
-        System.out.println(pathPositions.size());
         return position;
     }
 }

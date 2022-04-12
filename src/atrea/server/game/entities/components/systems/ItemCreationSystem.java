@@ -1,6 +1,8 @@
-package atrea.server.game.entity.components.systems;
+package atrea.server.game.entities.components.systems;
 
-import atrea.server.game.entity.components.ItemCreationComponent;
+import atrea.server.game.entities.components.Entity;
+import atrea.server.game.data.definition.ComponentDefinition;
+import atrea.server.game.entities.components.ItemCreationComponent;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -25,6 +27,10 @@ public class ItemCreationSystem extends ComponentSystem {
         //    return false;
 
         return false;
+    }
+
+    @Override public void addComponent(ComponentDefinition definition, Entity entity) {
+        components.put(entity.getEntityId(), new ItemCreationComponent(entity));
     }
 
     @Override public void update() {

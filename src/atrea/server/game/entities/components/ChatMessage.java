@@ -1,4 +1,4 @@
-package atrea.server.game.entity.components;
+package atrea.server.game.entities.components;
 
 import lombok.Getter;
 

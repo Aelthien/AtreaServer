@@ -1,4 +1,4 @@
-package atrea.server.networking.session;
+package atrea.server.engine.networking.session;
 
 public enum ESessionState {
 
@@ -6,5 +6,7 @@ public enum ESessionState {
     LOGGING_OUT,
     REQUESTED_LOG_OUT,
     LOGGED_IN,
-    LOGGED_OUT
+    LOGGED_OUT,
+    ENTERING_GAME,
+    IN_GAME
 }

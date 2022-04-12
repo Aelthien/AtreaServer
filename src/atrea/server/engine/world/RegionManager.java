@@ -1,8 +1,12 @@
-package atrea.server.game.world;
+package atrea.server.engine.world;
 
+import atrea.server.engine.main.GameManager;
 import atrea.server.game.ai.pathfinding.Tile;
 import atrea.server.engine.utilities.Position;
+import atrea.server.game.data.definition.DefinitionManager;
+import atrea.server.game.entities.EEntityType;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.buffer.Unpooled;
 import lombok.Getter;
 
@@ -25,7 +29,8 @@ public class RegionManager {
     private static final String REGION_PATH = "data/regions/";
     private static final String REGION_INDEX_PATH = REGION_PATH + "regions.index";
 
-    private static @Getter Region[][] regions = new Region[WORLD_DIMENSION][WORLD_DIMENSION];
+    private static @Getter
+    Region[][] regions = new Region[WORLD_DIMENSION][WORLD_DIMENSION];
 
     public static Region getRegion(Position position) {
         return getRegion(position.getX(), position.getY());
@@ -34,17 +39,22 @@ public class RegionManager {
     public static Region getRegion(int x, int y) {
         Region region = regions[x][y];
 
-        if (region == null)
-            System.out.println("Null");
-
-        if (!region.isLoaded())
-            loadRegion(region);
+        if (region == null) {
+            System.out.println(String.format("Region: x: %d y: %d is null", x, y));
+            return null;
+        }
 
         return region;
     }
 
     public static void initialise() {
         //generateTestRegion();
+        loadRegionIndices();
+
+    }
+
+    private static void loadRegionIndices() {
+
         System.out.println("Loading region indices.");
         long start = System.currentTimeMillis();
 
@@ -52,7 +62,7 @@ public class RegionManager {
             File file = new File(REGION_INDEX_PATH);
             InputStream stream = new FileInputStream(file);
 
-            ByteBuf buffer = Unpooled.buffer();
+            ByteBuf buffer = PooledByteBufAllocator.DEFAULT.buffer();
             buffer.writeBytes(stream.readAllBytes());
 
             int id;
@@ -66,7 +76,7 @@ public class RegionManager {
                 int x = id / WORLD_DIMENSION;
                 int y = id % WORLD_DIMENSION;
 
-                regions[x][y] = new Region(id, mapId, x, y);
+                loadRegion(x, y, mapId);
 
                 loadedRegions++;
             }
@@ -105,10 +115,9 @@ public class RegionManager {
         }
     }
 
-    public static Region loadRegion(Region region) {
-
+    private static void loadRegion(int regionX, int regionY, int mapId) {
         try {
-            File file = new File(REGION_PATH + region.getMapId() + ".data");
+            File file = new File(REGION_PATH + mapId + ".data");
             InputStream stream = new FileInputStream(file);
 
             ByteBuf buffer = Unpooled.buffer();
@@ -116,33 +125,35 @@ public class RegionManager {
 
             Tile[][][] tiles = new Tile[1][REGION_DIMENSION][REGION_DIMENSION];
 
-            int level = 0;
+            for (int i = 0; i < REGION_DIMENSION * REGION_DIMENSION; i++) {
+                int level = 0;
+                int x = i % REGION_DIMENSION;
+                int y = i / REGION_DIMENSION;
 
-            int xTile = 0;
-            int yTile = 0;
-
-            while (buffer.isReadable()) {
                 int type = buffer.readByte();
                 boolean walkable = buffer.readByte() == 1 ? true : false;
 
-                tiles[level][xTile][yTile] = new Tile(xTile, yTile, 0, type, walkable);
-
-                if (xTile == REGION_DIMENSION - 1) {
-                    xTile = 0;
-                    yTile++;
-                }
-                else
-                    xTile++;
+                tiles[level][x][y] = new Tile(x, y, level, type, walkable);
             }
 
-            region.setTiles(tiles);
+            regions[regionX][regionY].setTiles(tiles);
+
+            int objects = buffer.readInt();
+
+            for (int i = 0; i < objects; i++) {
+                int entityId = buffer.readInt();
+                int definitionId = buffer.readInt();
+                int type = buffer.readByte();
+                int x = buffer.readByte();
+                int y = buffer.readByte();
+
+                GameManager.getEntityManager().createEntity(entityId, definitionId, EEntityType.integerToEnum(type), x, y);
+            }
 
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-        return region;
     }
 }

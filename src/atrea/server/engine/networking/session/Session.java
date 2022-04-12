@@ -1,7 +1,8 @@
 package atrea.server.engine.networking.session;
 
-import atrea.server.engine.entities.Entity;
-import atrea.server.engine.utilities.Delegate;
+import atrea.server.engine.accounts.Account;
+import atrea.server.game.entities.components.Entity;
+import atrea.server.engine.networking.packet.outgoing.UpdateCharactersPacket;
 import atrea.server.engine.main.GameManager;
 import atrea.server.engine.networking.databases.DatabaseManager;
 import atrea.server.engine.networking.packet.MessageSender;
@@ -17,13 +18,13 @@ import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import static atrea.server.engine.networking.databases.NetworkOpcodes.*;
-import static atrea.server.game.entities.EEntityType.*;
 
-public class PlayerSession {
+public class Session {
     private final int QUEUE_LIMIT = 10;
-
-    private @Getter Entity player;
     private @Getter int userId;
+    private @Getter Account account;
+    private @Getter boolean loggedIn;
+    private @Getter @Setter boolean gameLoaded;
 
     private final @Getter MessageSender messageSender;
     private final @Getter DatabaseManager databaseManager;
@@ -39,7 +40,7 @@ public class PlayerSession {
 
     private long lastPacketReceived;
 
-    public PlayerSession(Channel channel) {
+    public Session(Channel channel) {
         this.channel = channel;
         this.messageSender = new MessageSender(channel);
         this.databaseManager = new DatabaseManager();
@@ -67,22 +68,19 @@ public class PlayerSession {
             return;
         }
 
-        player = GameManager.getEntityManager().createEntity(-1, Player);
+        loggedIn = true;
         userId = response.getUserId();
+        account = response.getAccount();
 
-        messageSender.setPlayer(player);
+        messageSender.setAccount(account);
 
-        player.setOnRemoveDelegate(new Delegate() {
-            @Override public void execute() {
-                requestLogOut();
-            }
-        });
+        databaseManager.setSession(this);
 
-        GameManager.getPlayerSessionManager().registerPlayerSession(player, this);
+        GameManager.getSessionManager().registerSession(account, this);
+        GameManager.getSessionManager().getPlayerSession(userId).messageSender.send(new UpdateCharactersPacket(account.getCharacters()));
     }
 
     public void queuePacket(IncomingPacket incomingPacket) {
-        System.out.println("Queue packet");
         int size = incomingPacketQueue.size() + prioritizedIncomingPacketQueue.size();
 
         if (size >= QUEUE_LIMIT)
@@ -92,12 +90,11 @@ public class PlayerSession {
     }
 
     public void update() {
-        messageSender.sendPing();
         processPacketQueues();
     }
 
     private void processPacket(IncomingPacket incomingPacket) {
-        PacketListeners.getListener(incomingPacket.getCode()).processGamePacket(this, incomingPacket.getBuffer());
+        PacketListeners.getListener(incomingPacket.getCode()).process(this, incomingPacket.getBuffer());
     }
 
     public void processPacketQueues() {

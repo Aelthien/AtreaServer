@@ -1,4 +1,4 @@
-package atrea.server.game.entity;
+package atrea.server.game.entities;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -12,15 +12,16 @@ public class EntityStatusEffect {
 	private @Getter @Setter int duration;
 	private @Getter @Setter int timeRemaining;
 	private @Getter int activationChance;
+	private @Getter int currentDelayTick;
 
-	public EntityStatusEffect(EEffect effect, int value, EValueType valueType, int delay, int duration, int timeRemaining, int activationChance) {
+	public EntityStatusEffect(EEffect effect, int value, EValueType valueType, int delay, int duration, int activationChance) {
 		this.effect = effect;
 		this.value = value;
 		this.valueType = valueType;
 		this.delay = delay;
 		this.duration = duration;
-		this.timeRemaining = timeRemaining;
 		this.activationChance = activationChance;
+		this.timeRemaining = duration;
 	}
 
 	public EntityStatusEffect(EEffect effect, int value, EValueType valueType, int duration, int delay) {
@@ -30,5 +31,23 @@ public class EntityStatusEffect {
 		this.duration = duration;
 		this.delay = delay;
 		this.activationChance = 100;
+		this.timeRemaining = duration;
+	}
+
+	public void tick() {
+		timeRemaining--;
+		currentDelayTick--;
+	}
+
+	public boolean isCompleted() {
+		return timeRemaining == 0;
+	}
+
+	public boolean activate() {
+		return currentDelayTick == 0;
+	}
+
+	public void reset() {
+		currentDelayTick = delay;
 	}
 }

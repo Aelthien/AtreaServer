@@ -1,4 +1,4 @@
-package atrea.server.networking.session;
+package atrea.server.engine.networking.session;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;

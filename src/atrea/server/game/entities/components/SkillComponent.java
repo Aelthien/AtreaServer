@@ -1,23 +1,34 @@
-package atrea.server.game.entity.components;
+package atrea.server.game.entities.components;
 
 import atrea.server.game.content.skills.ESkill;
 import atrea.server.game.content.skills.Skill;
-import atrea.server.game.entity.Entity;
+import lombok.Getter;
+import lombok.Setter;
+
+import static atrea.server.game.entities.components.EComponentType.*;
 
 public class SkillComponent extends EntityComponent {
 
-    private Skill[] skills;
+    private final int MAX_SKILLS = 5;
+
+    private @Getter @Setter Skill[] skills;
+
+    @Override public EComponentType getComponentType() {
+        return SKILL;
+    }
 
     public SkillComponent(Entity parent) {
         super(parent);
+
+        skills = new Skill[MAX_SKILLS];
+    }
+
+    @Override public void update() {
+
     }
 
     public Skill getSkill(ESkill skill) {
         return skills[skill.ordinal()];
-    }
-
-    public Skill[] getSkills() {
-        return skills;
     }
 
     public void setMaxLevel(ESkill skill, int level) {
@@ -53,5 +64,11 @@ public class SkillComponent extends EntityComponent {
         }
 
         return false;
+    }
+
+    public void setSkill(int index, Skill skill) {
+        skill.setNeedsUpdate(true);
+
+        skills[index] = skill;
     }
 }

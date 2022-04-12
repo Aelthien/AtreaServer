@@ -1,24 +1,34 @@
-package atrea.server.game.world;
+package atrea.server.engine.main;
 
-import atrea.server.game.entity.*;
-import atrea.server.engine.networking.session.PlayerSessionManager;
+import atrea.server.game.entities.components.Entity;
+import atrea.server.game.entities.components.EntityManager;
+import atrea.server.game.entities.components.systems.SystemManager;
+import atrea.server.engine.networking.session.Session;
+import atrea.server.engine.networking.session.SessionManager;
 import lombok.Getter;
 
 public class GameManager {
 
-    private static @Getter PlayerSessionManager playerSessionManager;
+    private static @Getter SessionManager sessionManager;
     private static @Getter EntityManager entityManager;
-
-    private static final int QUEUE_LIMIT = 50;
+    private static @Getter SystemManager systemManager;
 
     static {
-        playerSessionManager = new PlayerSessionManager();
-        entityManager = new EntityManager();
+        sessionManager = new SessionManager();
+        systemManager = new SystemManager();
+        entityManager = new EntityManager(systemManager);
     }
 
     public static void update() {
-        playerSessionManager.update();
+        sessionManager.update();
+        systemManager.update();
         entityManager.update();
+    }
+
+    public static void addPlayer(Session session) {
+        Entity player = entityManager.createPlayer();
+        session.getAccount().setCurrentCharacter(player);
+        entityManager.queueEntityAdd(player);
     }
 
     /*public static void update() {

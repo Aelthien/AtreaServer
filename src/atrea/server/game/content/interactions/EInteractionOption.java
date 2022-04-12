@@ -1,4 +1,4 @@
-package atrea.game.content.interactions;
+package atrea.server.game.content.interactions;
 
 public enum EInteractionOption {
 

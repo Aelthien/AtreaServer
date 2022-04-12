@@ -1,9 +1,9 @@
-package atrea.game.ai;
+package atrea.server.game.ai;
 
-import atrea.game.ai.pathfinding.Node;
-import atrea.game.world.Region;
-import atrea.game.world.RegionManager;
-import atrea.main.Position;
+import atrea.server.game.ai.pathfinding.Node;
+import atrea.server.engine.world.Region;
+import atrea.server.engine.world.RegionManager;
+import atrea.server.engine.utilities.Position;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -13,7 +13,7 @@ public class Pathfinder {
 
     public static List<Position> findPath(Position startPosition, Position targetPosition) {
         System.out.println("Finding path");
-        Region region = RegionManager.getRegion(new Position(targetPosition.getX() / 64, targetPosition.getY() / 64, targetPosition.getLevel()));
+        Region region = RegionManager.getRegion(new Position(targetPosition.getX() / 64, targetPosition.getY() / 64, targetPosition.getHeight()));
 
         Node startNode = new Node(region.getTile(startPosition));
         Node endNode = new Node(region.getTile(targetPosition));
@@ -37,6 +37,7 @@ public class Pathfinder {
             closed.add(currentNode);
 
             if (currentNode.equals(endNode)) {
+                System.out.println("Path found");
                 return reconstructPath(startNode, currentNode);
             }
 
@@ -46,11 +47,11 @@ public class Pathfinder {
                 if (!neighbour.isWalkable() || closed.contains(neighbour))
                     continue;
 
-                int newCost = currentNode.getGCost() + getDistance(currentNode, neighbour);
+                int newCost = currentNode.getGCost() + currentNode.getPosition().calculateTileDistance(neighbour.getPosition());
 
                 if (newCost < neighbour.getGCost() || !open.contains(neighbour)) {
                     neighbour.setGCost(newCost);
-                    neighbour.setHCost(getDistance(neighbour, endNode));
+                    neighbour.setHCost(neighbour.getPosition().calculateTileDistance(endNode.getPosition()));
                     neighbour.setParent(currentNode);
 
                     if (!open.contains(neighbour)) {
@@ -59,6 +60,8 @@ public class Pathfinder {
                 }
             }
         }
+
+        System.out.println("Fin");
 
         return null;
     }
@@ -76,15 +79,5 @@ public class Pathfinder {
         Collections.reverse(positions);
 
         return positions;
-    }
-
-    private static int getDistance(Node current, Node target) {
-        int dX = Math.abs(current.getPosition().getX() - target.getPosition().getX());
-        int dY = Math.abs(current.getPosition().getY() - target.getPosition().getY());
-
-        if (dX > dY)
-            return 14 * dY + 10 * (dX - dY);
-        else
-            return 14 * dX + 10 * (dY - dX);
     }
 }

@@ -1,2 +1,6 @@
-package atrea.server.engine.networking.databases;public enum ECharacterCreationStatus {
+package atrea.server.engine.networking.databases;
+
+public enum ECharacterCreationStatus {
+    SUCCESS,
+    FAIL
 }

@@ -1,8 +1,11 @@
-package atrea.server.game.entity;
+package atrea.server.game.entities;
 
-public enum EEntityType
-{
+public enum EEntityType {
     NPC,
     Player,
-    Object
+    Object;
+
+    public static EEntityType integerToEnum(int value) {
+        return values()[value];
+    }
 }

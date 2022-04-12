@@ -1,4 +1,4 @@
-package atrea.game.data.definition;
+package atrea.server.game.data.definition;
 
 import lombok.Getter;
 

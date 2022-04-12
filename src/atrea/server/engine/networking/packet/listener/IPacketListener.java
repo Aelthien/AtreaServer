@@ -1,9 +1,9 @@
-package atrea.server.networking.packet.listener;
+package atrea.server.engine.networking.packet.listener;
 
-import atrea.server.networking.session.PlayerSession;
+import atrea.server.engine.networking.session.Session;
 import io.netty.buffer.ByteBuf;
 
 public interface IPacketListener
 {
-    void processGamePacket(PlayerSession playerSession, ByteBuf buffer);
+    void process(Session session, ByteBuf buffer);
 }

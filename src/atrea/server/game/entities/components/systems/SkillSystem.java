@@ -1,16 +1,13 @@
-package atrea.server.game.entity.components.systems;
+package atrea.server.game.entities.components.systems;
 
-import atrea.server.game.entity.components.SkillComponent;
+import atrea.server.game.entities.components.Entity;
+import atrea.server.game.data.definition.ComponentDefinition;
+import atrea.server.game.entities.components.SkillComponent;
 
-import java.util.HashMap;
-import java.util.Map;
+public class SkillSystem extends ComponentSystem<SkillComponent> {
 
-public class SkillSystem extends ComponentSystem {
-
-    private Map<Integer, SkillComponent> components = new HashMap<>();
-
-    public SkillComponent getSkillComponent(int id) {
-        return components.get(id);
+    @Override public void addComponent(ComponentDefinition definition, Entity entity) {
+        components.put(entity.getEntityId(), new SkillComponent(entity));
     }
 
     @Override public void update() {

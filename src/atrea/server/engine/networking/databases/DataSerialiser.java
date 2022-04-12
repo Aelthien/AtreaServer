@@ -4,7 +4,7 @@ import atrea.server.engine.accounts.CharacterData;
 import atrea.server.engine.accounts.CharacterGeneralData;
 import atrea.server.engine.accounts.CharacterWorldData;
 import atrea.server.engine.accounts.ELocation;
-import atrea.server.engine.entities.systems.SystemManager;
+import atrea.server.game.entities.components.systems.SystemManager;
 import atrea.server.engine.utilities.Position;
 import atrea.server.game.content.items.Item;
 import atrea.server.game.content.skills.ESkill;
@@ -27,8 +27,9 @@ import static atrea.server.engine.networking.databases.EGender.*;
 /**
  * Static class with subclasses containing functions
  * for serialisation and deserialisation of data into and from
- * {@link Blob} objects for storage in a sql database */
-public class DatabaseSerializer {
+ * {@link Blob} objects for storage in a sql database
+ */
+public class DataSerialiser {
 
     public static ItemSerializer items = new ItemSerializer();
     public static SkillSerializer skills = new SkillSerializer();
@@ -169,39 +170,40 @@ public class DatabaseSerializer {
     }
 
     public static class CharacterDataSerializer {
-        public List<Blob> serialise(CharacterData data) throws SQLException {
-            List<Blob> dataBlobs = new ArrayList<>();
-            ByteBuf buffer = PooledByteBufAllocator.DEFAULT.buffer();
+        public List<byte[]> serialise(CharacterData data) {
+            List<byte[]> dataList = new ArrayList<>();
 
-            dataBlobs.add(serialiseGeneralData(data.getGeneralData(), buffer));
-            dataBlobs.add(serializeWorldData(data.getWorldData(), buffer));
+            try {
+                dataList.add(serialiseGeneralData(data.getGeneralData()));
+                //dataList.add(serializeWorldData(data.getWorldData()));
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
 
-            return dataBlobs;
+            return dataList;
         }
 
-        public CharacterData deserialise(List<Blob> dataList) throws SQLException {
-            CharacterData data = null;
-            ByteBuf buffer = PooledByteBufAllocator.DEFAULT.buffer();
-
-            //CharacterGeneralData generalData = deserialiseGeneralData(dataList.get(0), buffer);
+        public CharacterData deserialise(int id, List<Blob> dataList) throws SQLException {
+            CharacterGeneralData generalData = deserialiseGeneralData(dataList.get(0));
             //CharacterWorldData worldData = deserialiseWorldData(dataList.get(1), buffer);
 
-            return data;
+            return new CharacterData(id, generalData, null);
         }
 
-        public CharacterGeneralData deserialiseGeneralData(int characterId, Blob data, ByteBuf buffer) throws SQLException {
-            buffer.clear();
+        public CharacterGeneralData deserialiseGeneralData(Blob data) throws SQLException {
+            ByteBuf buffer = PooledByteBufAllocator.DEFAULT.buffer();
+
             buffer.writeBytes(data.getBytes(1, (int) data.length()));
 
             int nameLength = buffer.readByte();
             String name = buffer.readCharSequence(nameLength, Charset.defaultCharset()).toString();
-
+/*
             EGender gender = buffer.readByte() == 0 ? MALE : FEMALE;
             int level = buffer.readByte();
             int guild = buffer.readInt();
             ELocation location = ELocation.getLocation(buffer.readByte());
-
-            return new CharacterGeneralData(characterId, name, gender, level, guild, location);
+*/
+            return new CharacterGeneralData(name, MALE, 1, -1, ELocation.EMERALD_ISLE);
         }
 
         private CharacterWorldData deserialiseWorldData(Blob data, ByteBuf buffer) throws SQLException {
@@ -216,24 +218,31 @@ public class DatabaseSerializer {
             return new CharacterWorldData(new Position(x, y, height), running);
         }
 
-        private Blob serialiseGeneralData(CharacterGeneralData data, ByteBuf buffer) throws SQLException {
-            buffer.clear();
+        public byte[] serialiseGeneralData(CharacterGeneralData data) throws SQLException {
+            ByteBuf buffer = PooledByteBufAllocator.DEFAULT.buffer();
+
             buffer.writeByte(data.getName().length());
             buffer.writeCharSequence(data.getName(), Charset.defaultCharset());
-            buffer.writeInt(data.getLevel());
-            buffer.writeInt(data.getGuild());
 
-            return new SerialBlob(buffer.array());
+            byte[] bytes = new byte[buffer.readableBytes()];
+
+            buffer.readBytes(bytes);
+            buffer.release();
+
+            return bytes;
         }
 
-        private Blob serializeWorldData(CharacterWorldData data, ByteBuf buffer) throws SQLException {
+        private byte[] serializeWorldData(CharacterWorldData data, ByteBuf buffer) throws SQLException {
+            byte[] bytes = new byte[0];
             buffer.clear();
             buffer.writeInt(data.getPosition().getX());
             buffer.writeInt(data.getPosition().getY());
             buffer.writeByte(data.getPosition().getHeight());
             buffer.writeByte(data.isRunning() ? 1 : 0);
 
-            return new SerialBlob(buffer.array());
+            buffer.readBytes(bytes);
+
+            return bytes;
         }
     }
 }

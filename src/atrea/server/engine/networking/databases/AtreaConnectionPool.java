@@ -1,4 +1,4 @@
-package atrea.server.engine.net.database;
+package atrea.server.engine.networking.databases;
 
 import com.mchange.v2.c3p0.ComboPooledDataSource;
 

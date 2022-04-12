@@ -1,4 +1,4 @@
-package atrea.game.ai.pathfinding;
+package atrea.server.game.ai.pathfinding;
 
 import lombok.Getter;
 import lombok.Setter;

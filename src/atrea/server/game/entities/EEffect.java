@@ -1,9 +1,9 @@
-package atrea.server.game.entity;
+package atrea.server.game.entities;
 
 import lombok.Getter;
 
-import static atrea.server.game.entity.EDamageType.*;
-import static atrea.server.game.entity.EEffectTarget.*;
+import static atrea.server.game.entities.EDamageType.*;
+import static atrea.server.game.entities.EEffectTarget.*;
 
 public enum EEffect {
     POISONED(null, HEALTH, POISON,true),

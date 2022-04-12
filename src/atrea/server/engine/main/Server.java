@@ -1,17 +1,11 @@
-package atrea.server.engine;
+package atrea.server.engine.main;
 
-import atrea.server.Bootstrap;
-
-public class Server
-{
-    public static void main(String[] args)
-    {
+public class Server {
+    public static void main(String[] args) {
         try {
-            new atrea.server.game.GameEngine().initialize();
+            new GameEngine().initialize();
             new Bootstrap().bind();
-        }
-        catch (InterruptedException e)
-        {
+        } catch (InterruptedException e) {
             e.printStackTrace();
         }
 
@@ -21,13 +15,11 @@ public class Server
         configureShutdownProcedure();
     }
 
-    private static void configureShutdownProcedure()
-    {
+    private static void configureShutdownProcedure() {
         Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
             @Override
-            public void run()
-            {
-            System.out.println("Shutdown");
+            public void run() {
+                System.out.println("Shutdown");
             }
         }));
     }
