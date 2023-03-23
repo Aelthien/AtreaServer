@@ -1,6 +1,6 @@
 package atrea.server.engine.accounts;
 
-import atrea.server.game.entities.components.Entity;
+import atrea.server.game.entities.ecs.Entity;
 import lombok.Getter;
 import lombok.Setter;
 

@@ -18,11 +18,12 @@ public class Region {
     private @Getter @Setter boolean loaded;
     private @Getter Position position;
 
-    private @Getter @Setter Tile[][][] tiles;
+    private @Getter Tile[][][] tiles;
 
-    public Region(int id, int mapId, int x, int y) {
+    public Region(int id, int mapId, int x, int y, Tile[][][] tiles, EntitySpawnData[] entitySpawns) {
         this.id = id;
         this.mapId = mapId;
+        this.tiles = tiles;
 
         this.position = new Position(x, y);
     }

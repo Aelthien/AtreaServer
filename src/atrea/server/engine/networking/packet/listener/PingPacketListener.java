@@ -7,6 +7,5 @@ public class PingPacketListener implements IPacketListener {
 
     @Override
     public void process(Session session, ByteBuf buffer) {
-        System.out.println("Ping from client");
     }
 }

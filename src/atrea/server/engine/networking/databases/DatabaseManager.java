@@ -1,9 +1,10 @@
 package atrea.server.engine.networking.databases;
 
 import atrea.server.engine.accounts.*;
-import atrea.server.game.entities.components.Entity;
-import atrea.server.game.entities.components.*;
-import atrea.server.game.entities.components.systems.SystemManager;
+import atrea.server.engine.utilities.Position;
+import atrea.server.game.content.items.Item;
+import atrea.server.game.entities.ecs.Entity;
+import atrea.server.game.entities.ecs.systems.SystemManager;
 import atrea.server.engine.main.GameManager;
 import atrea.server.engine.networking.packet.LoginDetails;
 import atrea.server.engine.networking.packet.RegisterDetails;
@@ -27,8 +28,7 @@ public class DatabaseManager {
     private Connection connection;
     private PreparedStatement statement;
     private Entity player;
-    private @Setter
-    Session session;
+    private @Setter Session session;
     private int userId;
     private final SystemManager systemManager;
 
@@ -64,16 +64,6 @@ public class DatabaseManager {
         openConnection();
 
         boolean success = saveCharacter();
-
-        closeConnection();
-
-        return success;
-    }
-
-    public boolean load(Entity player, CharacterData characterData) {
-        this.player = player;
-
-        boolean success = loadCharacter(characterData);
 
         closeConnection();
 
@@ -248,14 +238,16 @@ public class DatabaseManager {
         return REGISTRATION_SUCCESSFUL;
     }
 
-    private boolean loadCharacter(CharacterData characterData) {
+    public boolean loadCharacter(Entity player, CharacterData characterData) {
+        this.player = player;
+
         boolean success = false;
 
-        ResultSet rs;
-
-        String sql = "SELECT general FROM characters WHERE id = ?";
-
         try {
+            ResultSet rs;
+
+            String sql = "SELECT general FROM characters WHERE id = ?";
+
             statement = connection.prepareStatement(sql);
             statement.setInt(1, characterData.getId());
 
@@ -271,15 +263,13 @@ public class DatabaseManager {
 
                 player.setName(name);
 
-                TransformComponent transform = systemManager.getTransformSystem().get(player.getEntityId());
-                StatusComponent status = systemManager.getStatusSystem().get(player.getEntityId());
-                GuildComponent guild = systemManager.getGuildSystem().get(player.getEntityId());
+                systemManager.getMovementSystem().moveEntity(player.getEntityId(), new Position(0, 0, 0), false);
 
-                //transform.setPosition(new Position(posX, posY, height), true, true).setNeedsUpdating();
-                //status.setHealth(health).setEnergy(energy).setNeedsUpdating();
+                Item item = new Item(0, 1, true);
+
+                GameManager.getSystemManager().getInventorySystem().getComponent(player.getEntityId()).addItem(item, true);
 
                 success = true;
-                System.out.println("Successfully loaded character with the id: " + characterData.getId());
             } else {
                 success = false;
                 System.out.println("Failed to load character!");
@@ -287,6 +277,8 @@ public class DatabaseManager {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+
+        closeConnection();
 
         return success;
     }
@@ -311,7 +303,7 @@ public class DatabaseManager {
 
         CharacterData characterData = CharacterData.create(name, gender);
 
-        try {
+        try {;
             List<byte[]> dataList = DataSerialiser.characters.serialise(characterData);
 
             statement = connection.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS);
@@ -357,9 +349,9 @@ public class DatabaseManager {
             statement = connection.prepareStatement(sql);
 
             //statement.setBlob(1, DatabaseSerializer.characters.serialise(player));
-            statement.setBlob(2, DataSerialiser.skills.serialiseAll(systemManager.getSkillSystem().get(player.getEntityId()).getSkills()));
-            statement.setBlob(3, DataSerialiser.items.serialiseAll(systemManager.getInventorySystem().get(player.getEntityId()).getInventory().getItems()));
-            statement.setBlob(4, DataSerialiser.items.serialiseAll(systemManager.getEquipmentSystem().get(player.getEntityId()).getEquipment().getItems()));
+            statement.setBlob(2, DataSerialiser.skills.serialiseAll(systemManager.getSkillSystem().getComponent(player.getEntityId()).getSkills()));
+            statement.setBlob(3, DataSerialiser.items.serialiseAll(systemManager.getInventorySystem().getComponent(player.getEntityId()).getInventory().getItems()));
+            statement.setBlob(4, DataSerialiser.items.serialiseAll(systemManager.getEquipmentSystem().getComponent(player.getEntityId()).getEquipment().getItems()));
             statement.setInt(5, userId);
 
             int response = statement.executeUpdate();

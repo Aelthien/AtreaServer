@@ -1,0 +1,11 @@
+[
+	{
+		"id": 0,
+		"name": "Iron round shield",
+		"type": "ARMOUR",
+		"maxCondition": 100,
+		"maxCharges": 0,
+		"weight": 7.5,
+		"stackable": false
+	}
+]

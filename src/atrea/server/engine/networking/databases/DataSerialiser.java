@@ -4,7 +4,7 @@ import atrea.server.engine.accounts.CharacterData;
 import atrea.server.engine.accounts.CharacterGeneralData;
 import atrea.server.engine.accounts.CharacterWorldData;
 import atrea.server.engine.accounts.ELocation;
-import atrea.server.game.entities.components.systems.SystemManager;
+import atrea.server.game.entities.ecs.systems.SystemManager;
 import atrea.server.engine.utilities.Position;
 import atrea.server.game.content.items.Item;
 import atrea.server.game.content.skills.ESkill;
@@ -45,7 +45,7 @@ public class DataSerialiser {
                 outputStream.write(ByteUtils.intToBytes(item.getId()));
                 outputStream.write(item.getSlot());
                 outputStream.write(item.getAmount());
-                outputStream.write(item.getQuality());
+                outputStream.write(item.isHighQuality() ? 1 : 0);
                 outputStream.write(ByteUtils.shortToBytes(item.getCharges()));
                 outputStream.write(item.getCondition());
 
@@ -84,7 +84,7 @@ public class DataSerialiser {
             int id = buffer.readInt();
             int slot = buffer.readByte();
             int amount = buffer.readByte();
-            int quality = buffer.readByte();
+            boolean highQuality = buffer.readBoolean();
             int charges = buffer.readByte();
             int condition = buffer.readByte();
             int modCount = buffer.readByte();
@@ -97,7 +97,7 @@ public class DataSerialiser {
                 }
             }
 
-            return new Item(id, slot, amount, quality, charges, condition, mods, true);
+            return new Item(id, slot, amount, highQuality, charges, condition, mods, true);
         }
 
         public Item[] deserialiseAll(ByteBuf buffer) {

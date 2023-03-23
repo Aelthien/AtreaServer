@@ -1,9 +1,7 @@
 package atrea.server.engine.main;
 
-import atrea.server.game.entities.components.Entity;
-import atrea.server.game.entities.components.EntityManager;
-import atrea.server.game.entities.components.systems.SystemManager;
-import atrea.server.engine.networking.session.Session;
+import atrea.server.game.entities.ecs.EntityManager;
+import atrea.server.game.entities.ecs.systems.SystemManager;
 import atrea.server.engine.networking.session.SessionManager;
 import lombok.Getter;
 
@@ -23,12 +21,6 @@ public class GameManager {
         sessionManager.update();
         systemManager.update();
         entityManager.update();
-    }
-
-    public static void addPlayer(Session session) {
-        Entity player = entityManager.createPlayer();
-        session.getAccount().setCurrentCharacter(player);
-        entityManager.queueEntityAdd(player);
     }
 
     /*public static void update() {

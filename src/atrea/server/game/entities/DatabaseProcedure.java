@@ -1,6 +1,6 @@
 package atrea.server.game.entities;
 
-import atrea.server.game.entities.components.Entity;
+import atrea.server.game.entities.ecs.Entity;
 
 import java.sql.Connection;
 

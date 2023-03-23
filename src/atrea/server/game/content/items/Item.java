@@ -10,17 +10,17 @@ public class Item {
     private @Getter @Setter int id;
     private @Getter @Setter int slot;
     private @Getter @Setter int amount;
-    private @Getter @Setter int quality;
+    private @Getter @Setter boolean highQuality;
     private @Getter @Setter int charges;
     private @Getter @Setter int condition;
     private @Getter @Setter Item[] mods;
     private @Getter @Setter boolean needsRefresh;
 
-    public Item(int id, int slot, int amount, int quality, int charges, int condition, Item[] mods, boolean refresh) {
+    public Item(int id, int slot, int amount, boolean highQuality, int charges, int condition, Item[] mods, boolean refresh) {
         this.id = id;
         this.slot = slot;
         this.amount = amount;
-        this.quality = quality;
+        this.highQuality = highQuality;
         this.charges = charges;
         this.condition = condition;
         this.mods = mods;
@@ -45,7 +45,6 @@ public class Item {
     public void reset() {
         id = -1;
         amount = 0;
-        quality = -1;
         charges = 0;
         condition = 0;
         mods = null;
@@ -55,11 +54,11 @@ public class Item {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Item item = (Item) o;
-        return id == item.id && quality == item.quality && Arrays.equals(mods, item.mods);
+        return id == item.id && highQuality == item.highQuality && Arrays.equals(mods, item.mods);
     }
 
     @Override public int hashCode() {
-        int result = Objects.hash(id, amount, quality, charges, condition);
+        int result = Objects.hash(id, amount, highQuality, charges, condition);
         result = 31 * result + Arrays.hashCode(mods);
         return result;
     }
@@ -82,6 +81,6 @@ public class Item {
     }
 
     public Item copy(int slot) {
-        return new Item(id, slot, amount, quality, charges, condition, copyMods(), false);
+        return new Item(id, slot, amount, highQuality, charges, condition, copyMods(), false);
     }
 }

@@ -1,11 +1,11 @@
 package atrea.server.engine.networking.packet;
 
 import atrea.server.engine.accounts.Account;
-import atrea.server.game.entities.components.Entity;
-import atrea.server.game.entities.components.EntityManager;
+import atrea.server.game.entities.ecs.Entity;
+import atrea.server.game.entities.ecs.EntityManager;
 import atrea.server.engine.main.GameManager;
 import atrea.server.engine.networking.packet.outgoing.OutgoingPacket;
-import atrea.server.game.entities.components.ChatMessage;
+import atrea.server.game.entities.ecs.ChatMessage;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
@@ -13,7 +13,6 @@ import io.netty.channel.Channel;
 import lombok.Setter;
 
 import java.nio.charset.Charset;
-import java.util.Collection;
 
 import static atrea.server.engine.networking.packet.outgoing.OutgoingPacketConstants.*;
 
@@ -22,6 +21,7 @@ public class MessageSender {
     private final Channel channel;
     private @Setter Account account;
     private EntityManager entityManager;
+    private long serverTime;
 
     public MessageSender(Channel channel) {
         this.channel = channel;
@@ -113,14 +113,34 @@ public class MessageSender {
         send(buffer);
     }
 
-    public void sendUpdatePlayerLocalEntities(Entity player, Entity[] entities) {
+    public void sendUpdatePlayerLocalEntities(Entity player) {
         ByteBuf buffer = getBuffer();
 
         buffer.writeByte(UPDATE_ENTITIES);
 
-        if (entityManager.getEntityUpdating().updatePlayerLocalEntities(player, entities, buffer))
+        if (entityManager.getEntityUpdating().updatePlayerLocalEntities(player, buffer)) {
             send(buffer);
-        else
+        } else
             buffer.release();
+    }
+
+    public void sendTickData() {
+        ByteBuf buffer = getBuffer();
+
+        buffer.writeByte(SEND_TICK);
+
+        send(buffer);
+    }
+
+    public void sendPing() {
+        ByteBuf buffer = getBuffer();
+
+        buffer.writeByte(SEND_PING);
+
+        long time = System.currentTimeMillis();
+
+        buffer.writeLong(time);
+
+        send(buffer);
     }
 }

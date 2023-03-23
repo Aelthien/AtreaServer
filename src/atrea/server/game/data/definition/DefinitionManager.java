@@ -10,7 +10,7 @@ public class DefinitionManager {
     private static final String DEFINITION_PATH = "data/definitions/";
 
     private static EntityDefinition[] entityDefinitions = new EntityDefinition[10000];
-    private static ItemDefinition[] itemDefinitions;
+    private static ItemDefinition[] itemDefinitions = new ItemDefinition[10000];
     private static RecipeDefinition[] recipeDefinitions;
 
     private static <T> T load(String definition, Class type, Gson gson) throws FileNotFoundException {
@@ -24,10 +24,9 @@ public class DefinitionManager {
 
         long start = System.currentTimeMillis();
 
-        System.out.println(entityDefinitions);
         try {
-            entityDefinitions = load("Entity", entityDefinitions.getClass(), gson);
-            //itemDefinitions = load("item", itemDefinitions.getClass(), gson);
+            entityDefinitions = load("Entity", EntityDefinition[].class, gson);
+            itemDefinitions = load("item", ItemDefinition[].class, gson);
             // recipeDefinitions = load("recipe", recipeDefinitions.getClass(), gson);
         } catch (FileNotFoundException e) {
             e.printStackTrace();

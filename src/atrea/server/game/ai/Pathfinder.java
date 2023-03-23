@@ -10,9 +10,7 @@ import java.util.Collections;
 import java.util.List;
 
 public class Pathfinder {
-
     public static List<Position> findPath(Position startPosition, Position targetPosition) {
-        System.out.println("Finding path");
         Region region = RegionManager.getRegion(new Position(targetPosition.getX() / 64, targetPosition.getY() / 64, targetPosition.getHeight()));
 
         Node startNode = new Node(region.getTile(startPosition));
@@ -37,7 +35,6 @@ public class Pathfinder {
             closed.add(currentNode);
 
             if (currentNode.equals(endNode)) {
-                System.out.println("Path found");
                 return reconstructPath(startNode, currentNode);
             }
 
@@ -60,8 +57,6 @@ public class Pathfinder {
                 }
             }
         }
-
-        System.out.println("Fin");
 
         return null;
     }

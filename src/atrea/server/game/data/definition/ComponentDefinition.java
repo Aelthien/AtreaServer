@@ -1,10 +1,9 @@
 package atrea.server.game.data.definition;
 
-import atrea.server.game.entities.components.EComponentType;
+import atrea.server.game.entities.ecs.EComponentType;
 import lombok.Getter;
 
 public class ComponentDefinition {
-
     private @Getter EComponentType type;
     private @Getter String[] values;
 

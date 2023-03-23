@@ -1,5 +1,6 @@
 package atrea.server.game.content.items;
 
+import atrea.server.game.data.definition.DefinitionManager;
 import atrea.server.game.data.definition.ItemDefinition;
 import lombok.Getter;
 
@@ -8,9 +9,12 @@ import java.util.List;
 
 public class ItemContainer {
 
-    protected @Getter EContainerType containerType;
-    protected @Getter Item[] items;
-    protected @Getter int size;
+    protected @Getter
+    EContainerType containerType;
+    protected @Getter
+    Item[] items;
+    protected @Getter
+    int size;
 
     public ItemContainer(int size, EContainerType containerType) {
         this.size = size;
@@ -38,35 +42,32 @@ public class ItemContainer {
         if (emptySlot == -1)
             return false;
 
-        items[item.getSlot()].reset();
         setItem(item, emptySlot);
 
         return true;
     }
 
     public boolean addItem(Item item) {
-        if (item == null || !item.isValid())
+        if (!item.isValid())
             return false;
 
-        ItemDefinition definition = ItemDefinition.getDefinition(item.getId());
+        ItemDefinition definition = DefinitionManager.getItemDefinition(item.getId());
 
-        if (definition.isStackable()) {
+        if (!definition.isStackable())
+            return addItemToNewStack(item);
+        else {
             int index = findPartialStack(item, definition.getMaxStack());
 
             if (index != -1) {
                 Item itemToAddTo = items[index];
 
                 int newAmount = itemToAddTo.getAmount() + item.getAmount();
-
-
             } else {
                 return addItemToNewStack(item);
             }
-        } else {
-            return addItemToNewStack(item);
         }
 
-        return true;
+        return false;
     }
 
     public boolean removeAll(Item[] items) {
@@ -83,9 +84,8 @@ public class ItemContainer {
 
     public int findEmptySlot() {
         for (int i = 0; i < size; i++) {
-            if (items[i] == null) {
+            if (items[i].getId() == -1)
                 return i;
-            }
         }
 
         return -1;
@@ -137,7 +137,7 @@ public class ItemContainer {
         if (!item1.isValid())
             return false;
 
-        ItemDefinition definition = ItemDefinition.getDefinition(item1.getId());
+        ItemDefinition definition = DefinitionManager.getItemDefinition(item1.getId());
 
         if (!item1.equals(item2)) {
             items[slot1] = item2;

@@ -8,6 +8,21 @@
 			"x": 1,
 			"y": 1
 		},
-		"components": []
+		"components": [
+			{
+				"type": "TRANSFORM"
+			},
+			{
+				"type": "INTERACTION",
+				"values": [
+					"0,Use,{'type': 0, 'values': [ '40', 'You have tried to Use this [this_entity_name]' ]}",
+					"0,Open,{'type': 0, 'values': [ '40', 'You have tried to Open this [this_entity_name]' ]}",
+					"0,Examine,{'type': 0, 'values': [ '40', 'You have tried to Examine this [this_entity_name]' ]}"
+				]
+			},
+			{
+				"type": "COMMAND"
+			}
+		]
 	}
 ]

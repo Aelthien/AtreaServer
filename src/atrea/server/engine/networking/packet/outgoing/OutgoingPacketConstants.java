@@ -19,6 +19,8 @@ public class OutgoingPacketConstants {
     public static int SEND_ITEM_CONTAINER = 32;
 
     public static int UPDATE_ENTITIES = 40;
+    public static int UPDATE_ENTITIES_TEST = 41;
+    public static int SEND_TICK = 49;
     public static int SEND_PING = 50;
     public static int ENTITY_CLICK = 51;
 }

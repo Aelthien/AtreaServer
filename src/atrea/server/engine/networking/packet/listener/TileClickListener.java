@@ -12,8 +12,6 @@ public class TileClickListener implements IPacketListener {
         int x = buffer.readInt();
         int y = buffer.readInt();
 
-        System.out.println("Received: " + x + " " + y + " tile");
-
         int entityId = session.getAccount().getCurrentCharacter().getEntityId();
 
         GameManager.getSystemManager()

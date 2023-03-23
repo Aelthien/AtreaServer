@@ -1,6 +1,6 @@
 package atrea.server.game.content.items;
 
-import atrea.server.game.entities.components.Entity;
+import atrea.server.game.entities.ecs.Entity;
 
 public class ItemCrafting {
     

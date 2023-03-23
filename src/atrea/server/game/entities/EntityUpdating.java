@@ -1,27 +1,29 @@
 package atrea.server.game.entities;
 
 import atrea.server.engine.main.GameManager;
+import atrea.server.engine.world.RegionManager;
 import atrea.server.game.content.items.Item;
-import atrea.server.game.entities.components.*;
-import atrea.server.game.entities.components.systems.SystemManager;
-import atrea.server.game.entities.components.systems.TransformSystem;
+import atrea.server.game.entities.ecs.*;
+import atrea.server.game.entities.ecs.command.SpeechComponent;
+import atrea.server.game.entities.ecs.systems.SystemManager;
+import atrea.server.game.entities.ecs.systems.TransformSystem;
 import io.netty.buffer.ByteBuf;
 
+import java.nio.charset.Charset;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static atrea.server.engine.networking.packet.outgoing.OutgoingPacketConstants.SEND_ENTITY_STATUS;
-import static atrea.server.game.entities.EEntityType.*;
-import static atrea.server.game.entities.components.EComponentType.INVENTORY;
-import static atrea.server.game.entities.components.EComponentType.TRANSFORM;
-import static atrea.server.game.entities.components.EComponentUpdateType.DO_NOT_UPDATE_CLIENT;
+import static atrea.server.game.entities.EEntityType.Player;
+import static atrea.server.game.entities.ecs.EComponentType.*;
+import static atrea.server.game.entities.ecs.EComponentUpdateType.DO_NOT_UPDATE_CLIENT;
 
 public class EntityUpdating {
 
-    private SystemManager systemManager;
+    private final SystemManager systemManager;
     private Entity currentPlayer;
     private ByteBuf currentBuffer;
 
@@ -29,11 +31,14 @@ public class EntityUpdating {
         systemManager = GameManager.getSystemManager();
     }
 
-    public boolean updatePlayerLocalEntities(Entity player, Entity[] entities, ByteBuf buffer) {
+    public boolean updatePlayerLocalEntities(Entity player, ByteBuf buffer) {
         currentPlayer = player;
         currentBuffer = buffer;
 
+        EntityManager entityManager = GameManager.getEntityManager();
         TransformSystem transformSystem = systemManager.getTransformSystem();
+
+        List<Integer> grid = RegionManager.getEntityGrid().retrieve(transformSystem.getComponent(player.getEntityId()).getPosition());
 
         List<Entity> updatedEntities = new ArrayList<>();
         List<Entity> addedEntities = new ArrayList<>();
@@ -41,33 +46,31 @@ public class EntityUpdating {
 
         int updates = 0;
 
-        for (Iterator<Entity> entityIterator = currentPlayer.getLocalEntities().iterator(); entityIterator.hasNext(); ) {
-            Entity entity = entityIterator.next();
+        List<Integer> localEntities = currentPlayer.getLocalEntities();
 
-            if (entity == null)
-                continue;
+        for (Iterator<Integer> localEntityIterator = localEntities.iterator(); localEntityIterator.hasNext(); ) {
+            Entity entity = entityManager.getEntity(localEntityIterator.next());
 
-            if (GameManager.getEntityManager().entityExists(entity.getEntityId())
-                    && transformSystem.entitiesInRange(currentPlayer, entity, 50)) {
-                updatedEntities.add(entity);
-            } else {
-                entityIterator.remove();
+            if (!grid.contains(entity.getEntityId())) {
+                localEntityIterator.remove();
                 removedEntities.add(entity);
-            }
-
-            updates++;
-        }
-
-        for (Entity entity : entities) {
-            if (entity == null || entity.isHidden())
-                continue;
-
-            if (transformSystem.entitiesInRange(currentPlayer, entity, 50)) {
-                if (!currentPlayer.getLocalEntities().contains(entity)) {
-                    currentPlayer.getLocalEntities().add(entity);
-                    addedEntities.add(entity);
+                updates++;
+            } else {
+                if (entity.isNeedingUpdate()) {
+                    updatedEntities.add(entity);
                     updates++;
                 }
+            }
+        }
+
+        for (int entityId : grid) {
+            Entity entity = entityManager.getEntity(entityId);
+
+            if (!currentPlayer.getLocalEntities().contains(entityId)) {
+                currentPlayer.getLocalEntities().add(entityId);
+                addedEntities.add(entity);
+
+                updates++;
             }
         }
 
@@ -104,10 +107,12 @@ public class EntityUpdating {
 
         if (entity.getEntityType() != Player)
             currentBuffer.writeInt(entity.getDefinitionId());
-        else
+        else {
             currentBuffer.writeBoolean(entity == currentPlayer);
+            entity.setAlreadySpawned(true);
+        }
 
-        addComponentData(entity, entity.getComponents());
+        addComponentData(entity, entity.getUpdateFlags());
     }
 
     private void updateEntity(Entity entity) {
@@ -117,7 +122,7 @@ public class EntityUpdating {
         addComponentData(entity, entity.getUpdateFlags());
     }
 
-    private void addComponentData(Entity entity, List<EComponentType> components) {
+    private void addComponentData(Entity entity, Set<EComponentType> components) {
         int entityId = entity.getEntityId();
 
         List<EComponentType> componentList = components.stream().filter(componentType -> componentType.getUpdateType() != DO_NOT_UPDATE_CLIENT).collect(Collectors.toList());
@@ -134,11 +139,14 @@ public class EntityUpdating {
                 case TRANSFORM:
                     addTransformData(entityId);
                     break;
+                case SPEECH:
+                    //addSpeechData(entityId);
+                    break;
                 case STATUS:
                     //addStatusData(entityId);
                     break;
                 case INVENTORY:
-                    //addInventoryData(entityId);
+                    addInventoryData(entityId);
                     break;
                 case BANK:
                     //addBankData(entityId);
@@ -152,27 +160,37 @@ public class EntityUpdating {
         }
     }
 
+    private void addSpeechData(int entityId) {
+        SpeechComponent speech = systemManager.getSpeechSystem().getComponent(entityId);
+        currentBuffer.writeByte(SPEECH.ordinal());
+        currentBuffer.writeByte(speech.getMessage().length());
+        currentBuffer.writeCharSequence(speech.getMessage(), Charset.defaultCharset());
+    }
+
     private void addInventoryData(int entityId) {
-        InventoryComponent inventory = systemManager.getInventorySystem().get(entityId);
-        currentBuffer.writeByte(INVENTORY.ordinal());
+        InventoryComponent inventory = systemManager.getInventorySystem().getComponent(entityId);
+
         int inventorySize = inventory.getInventory().getSize();
+
+        currentBuffer.writeByte(INVENTORY.ordinal());
         currentBuffer.writeByte(inventorySize);
 
         for (int i = 0; i < inventorySize; i++) {
             Item item = inventory.getInventory().getItem(i);
 
-            if (item != null) {
-                currentBuffer.writeInt(item.getId());
-                currentBuffer.writeInt(item.getAmount());
-                currentBuffer.writeInt(item.getCharges());
-                currentBuffer.writeInt(item.getCondition());
-            } else
-                currentBuffer.writeByte(-1);
+            currentBuffer.writeInt(item.getId());
+
+            if (item.getId() != -1) {
+                currentBuffer.writeByte(item.getAmount());
+                //currentBuffer.writeByte(item.isHighQuality() ? 1 : 0);
+                //urrentBuffer.writeByte(item.getCharges());
+                //currentBuffer.writeByte(item.getCondition());
+            }
         }
     }
 
     private void addBankData(int entityId) {
-        InventoryComponent inventory = systemManager.getInventorySystem().get(entityId);
+        InventoryComponent inventory = systemManager.getInventorySystem().getComponent(entityId);
         currentBuffer.writeByte(INVENTORY.ordinal());
         int inventorySize = inventory.getInventory().getSize();
         currentBuffer.writeByte(inventorySize);
@@ -192,7 +210,7 @@ public class EntityUpdating {
     }
 
     private void addEquipmentData(int entityId) {
-        EquipmentComponent equipment = systemManager.getEquipmentSystem().get(entityId);
+        EquipmentComponent equipment = systemManager.getEquipmentSystem().getComponent(entityId);
         currentBuffer.writeByte(INVENTORY.ordinal());
         int inventorySize = equipment.getEquipment().getSize();
         currentBuffer.writeByte(inventorySize);
@@ -212,7 +230,7 @@ public class EntityUpdating {
     }
 
     public void addTransformData(int entityId) {
-        TransformComponent transform = systemManager.getTransformSystem().get(entityId);
+        TransformComponent transform = systemManager.getTransformSystem().getComponent(entityId);
         currentBuffer.writeByte(TRANSFORM.ordinal());
         currentBuffer.writeInt(transform.getPosition().getX());
         currentBuffer.writeInt(transform.getPosition().getY());
@@ -220,10 +238,11 @@ public class EntityUpdating {
         currentBuffer.writeBoolean(transform.isTeleport());
         currentBuffer.writeBoolean(transform.isRunning());
         currentBuffer.writeBoolean(transform.isPathEnd());
+        currentBuffer.writeBoolean(transform.isResetQueue());
     }
 
     public void addStatusData(int entityId) {
-        StatusComponent status = systemManager.getStatusSystem().get(entityId);
+        StatusComponent status = systemManager.getStatusSystem().getComponent(entityId);
         currentBuffer.writeByte(SEND_ENTITY_STATUS);
         currentBuffer.writeInt(status.getHealth());
         currentBuffer.writeByte(status.getEnergy());

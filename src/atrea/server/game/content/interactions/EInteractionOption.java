@@ -6,5 +6,6 @@ public enum EInteractionOption {
     DROP,
     OPEN,
     CLOSE,
-    EXAMINE
+    EXAMINE,
+    SEARCH
 }

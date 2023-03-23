@@ -1,7 +1,8 @@
 package atrea.server.engine.networking.session;
 
 import atrea.server.engine.accounts.Account;
-import atrea.server.game.entities.components.Entity;
+import atrea.server.engine.main.GameEngine;
+import atrea.server.game.entities.ecs.Entity;
 import atrea.server.engine.networking.packet.outgoing.UpdateCharactersPacket;
 import atrea.server.engine.main.GameManager;
 import atrea.server.engine.networking.databases.DatabaseManager;
@@ -16,6 +17,7 @@ import lombok.Setter;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.stream.Collectors;
 
 import static atrea.server.engine.networking.databases.NetworkOpcodes.*;
 
@@ -35,6 +37,8 @@ public class Session {
 
     private final Queue<IncomingPacket> prioritizedIncomingPacketQueue = new ConcurrentLinkedQueue<>();
     private final Queue<IncomingPacket> incomingPacketQueue = new ConcurrentLinkedQueue<>();
+
+    private final Queue<IncomingPacket> temporaryPacketQueue = new ConcurrentLinkedQueue<>();
 
     private final Map<Entity, Boolean> localEntities = new HashMap<>();
 
@@ -56,7 +60,6 @@ public class Session {
     }
 
     public void authorize(LoginDetails loginDetails) {
-        System.out.println("Authorising");
         LoginResponse response = databaseManager.login(loginDetails);
 
         messageSender.sendLoginResponse(response.getCode());
@@ -76,20 +79,25 @@ public class Session {
 
         databaseManager.setSession(this);
 
+        System.out.println(account.getCharacters()[0].getGeneralData().getName());
         GameManager.getSessionManager().registerSession(account, this);
         GameManager.getSessionManager().getPlayerSession(userId).messageSender.send(new UpdateCharactersPacket(account.getCharacters()));
     }
 
     public void queuePacket(IncomingPacket incomingPacket) {
-        int size = incomingPacketQueue.size() + prioritizedIncomingPacketQueue.size();
+        int size = temporaryPacketQueue.size();
 
         if (size >= QUEUE_LIMIT)
             return;
 
-        incomingPacketQueue.add(incomingPacket);
+        temporaryPacketQueue.add(incomingPacket);
     }
 
     public void update() {
+        while (temporaryPacketQueue.size() > 0) {
+            incomingPacketQueue.add(temporaryPacketQueue.poll());
+        }
+
         processPacketQueues();
     }
 
@@ -98,13 +106,10 @@ public class Session {
     }
 
     public void processPacketQueues() {
-
         if (incomingPacketQueue.isEmpty())
             return;
 
         int processed = 0;
-
-        //System.out.println("Processing " + packetQueue.size() + " packets this tick");
 
         for (; processed < QUEUE_LIMIT; processed++) {
             IncomingPacket incomingPacket = incomingPacketQueue.poll();

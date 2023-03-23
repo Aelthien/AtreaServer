@@ -17,7 +17,6 @@ public class EnterGamePacket extends OutgoingPacket {
     public EnterGamePacket(boolean canEnter) {
         super();
 
-        System.out.println("Enter game");
         buffer.writeBoolean(canEnter);
     }
 }

@@ -1,7 +1,8 @@
 package atrea.server.engine.networking.packet.listener;
 
 import atrea.server.engine.accounts.CharacterData;
-import atrea.server.game.entities.components.Entity;
+import atrea.server.game.entities.EEntityType;
+import atrea.server.game.entities.ecs.Entity;
 import atrea.server.engine.main.GameManager;
 import atrea.server.engine.networking.packet.outgoing.EnterGamePacket;
 import atrea.server.engine.networking.session.ESessionState;
@@ -34,9 +35,6 @@ public class PlayCharacterPacketListener implements IPacketListener {
         if (canEnter) {
             session.getMessageSender().send(new EnterGamePacket(true));
             session.getAccount().setCurrentCharacterData(character);
-            Entity player = GameManager.getEntityManager().createPlayer();
-            session.getAccount().setCurrentCharacter(player);
-            session.getDatabaseManager().load(player, character);
         } else
             session.getMessageSender().sendLogOut();
     }
