@@ -1,0 +1,27 @@
+[
+	{
+		"id": 0,
+		"name": "Flesh abomination",
+		"description": "Summons a level 10 flesh abomination.",
+		"entityDefinitionId": 1,
+		"summonType": "SUMMON",
+		"requiredItems": [
+			{
+				"itemId": 1,
+				"quantity": 1
+			}
+		],
+		"requiredSkills": [
+			{
+				"skill": "ANIMANCY",
+				"level": 1
+			}
+		],
+		"experienceRewards": [
+			{
+				"skill": "ANIMANCY",
+				"amount": 50
+			}
+		]
+	}
+]

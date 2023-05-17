@@ -1,9 +1,9 @@
 package atrea.server.game.ai;
 
-import atrea.server.game.ai.pathfinding.Node;
+import atrea.server.engine.utilities.Position;
 import atrea.server.engine.world.Region;
 import atrea.server.engine.world.RegionManager;
-import atrea.server.engine.utilities.Position;
+import atrea.server.game.ai.pathfinding.Node;
 
 import java.util.ArrayList;
 import java.util.Collections;

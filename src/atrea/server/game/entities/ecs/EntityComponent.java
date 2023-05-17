@@ -1,15 +1,18 @@
 package atrea.server.game.entities.ecs;
 
+import atrea.server.game.entities.Entity;
 import lombok.Getter;
 import lombok.Setter;
 
 public abstract class EntityComponent {
 
     protected @Getter int id;
-    protected @Getter @Setter Entity parent;
+    protected @Getter @Setter
+    Entity parent;
     protected @Getter @Setter boolean updated;
     protected int ticksRemaining;
     protected @Setter int tickRate;
+    private @Getter @Setter boolean active;
 
     public abstract EComponentType getComponentType();
 
@@ -39,4 +42,6 @@ public abstract class EntityComponent {
     public void setNeedsUpdating() {
         parent.addUpdateFlag(getComponentType());
     }
+
+    public abstract void reset();
 }

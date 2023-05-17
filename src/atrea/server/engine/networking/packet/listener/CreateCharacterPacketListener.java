@@ -19,22 +19,22 @@ public class CreateCharacterPacketListener implements IPacketListener {
     @Override
     public void process(Session session, ByteBuf buffer) {
         int index = buffer.readByte();
-
         int nameLength = buffer.readByte();
-
         String name  = buffer.readCharSequence(nameLength, Charset.defaultCharset()).toString();
-
         EGender gender = buffer.readByte() == 0 ? MALE : FEMALE;
+        int age = buffer.readByte();
 
-        CharacterData characterData = session.getDatabaseManager().createCharacter(index, name, gender);
+        CharacterData characterData = session.getDatabaseManager().createCharacter(index, name, gender, age);
 
-        ECharacterCreationStatus creationStatus;
+        ECharacterCreationStatus creationStatus = FAIL;
 
-        if (characterData != null) {
-            creationStatus = SUCCESS;
-            session.getMessageSender().send(new UpdateCharactersPacket(session.getAccount().getCharacters()));
-        } else {
-            creationStatus = FAIL;
+        try {
+            if (characterData != null) {
+                creationStatus = SUCCESS;
+                session.getMessageSender().send(new UpdateCharactersPacket(session.getAccount().getCharacters()));
+            }
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
         }
 
         session.getMessageSender().send(new CharacterCreationResponsePacket(creationStatus));

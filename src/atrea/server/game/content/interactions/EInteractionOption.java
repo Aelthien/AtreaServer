@@ -7,5 +7,6 @@ public enum EInteractionOption {
     OPEN,
     CLOSE,
     EXAMINE,
+    EQUIP,
     SEARCH
 }

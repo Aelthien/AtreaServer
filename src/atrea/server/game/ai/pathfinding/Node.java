@@ -10,8 +10,10 @@ public class Node {
 
     private @Getter Position position;
     private @Getter boolean walkable;
-    private @Getter @Setter int hCost, gCost;
-    private @Getter @Setter Node parent;
+    private @Getter
+    @Setter int hCost, gCost;
+    private @Getter
+    @Setter Node parent;
 
     public Node(Tile tile) {
         this.position = new Position(tile);

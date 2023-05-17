@@ -1,6 +1,7 @@
 package atrea.server.engine.main;
 
-import atrea.server.game.entities.ecs.EntityManager;
+import atrea.server.game.content.items.ItemManager;
+import atrea.server.game.entities.EntityManager;
 import atrea.server.game.entities.ecs.systems.SystemManager;
 import atrea.server.engine.networking.session.SessionManager;
 import lombok.Getter;
@@ -8,13 +9,15 @@ import lombok.Getter;
 public class GameManager {
 
     private static @Getter SessionManager sessionManager;
-    private static @Getter EntityManager entityManager;
     private static @Getter SystemManager systemManager;
+    private static @Getter EntityManager entityManager;
+    private static @Getter ItemManager itemManager;
 
     static {
         sessionManager = new SessionManager();
         systemManager = new SystemManager();
         entityManager = new EntityManager(systemManager);
+        itemManager = new ItemManager(systemManager);
     }
 
     public static void update() {

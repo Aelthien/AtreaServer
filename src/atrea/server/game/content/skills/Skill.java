@@ -8,22 +8,18 @@ import java.util.Objects;
 public class Skill {
 
     private final @Getter ESkill skill;
-    private final @Getter boolean minorSkill;
 
     private @Getter @Setter int maxLevel;
     private @Getter @Setter int currentLevel;
     private @Getter @Setter int experience;
-    private @Getter @Setter boolean experienceLocked;
 
     private @Getter @Setter boolean needsUpdate;
 
-    public Skill(ESkill skill, int currentLevel, int maxLevel, int experience, boolean minorSkill, boolean experienceLocked) {
+    public Skill(ESkill skill, int currentLevel, int maxLevel, int experience) {
         this.skill = skill;
         this.currentLevel = currentLevel;
         this.maxLevel = maxLevel;
         this.experience = experience;
-        this.minorSkill = minorSkill;
-        this.experienceLocked = experienceLocked;
     }
 
     public void addExperience(int amount) {

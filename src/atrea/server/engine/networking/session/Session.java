@@ -1,8 +1,7 @@
 package atrea.server.engine.networking.session;
 
 import atrea.server.engine.accounts.Account;
-import atrea.server.engine.main.GameEngine;
-import atrea.server.game.entities.ecs.Entity;
+import atrea.server.game.entities.Entity;
 import atrea.server.engine.networking.packet.outgoing.UpdateCharactersPacket;
 import atrea.server.engine.main.GameManager;
 import atrea.server.engine.networking.databases.DatabaseManager;
@@ -15,9 +14,9 @@ import io.netty.channel.Channel;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.stream.Collectors;
 
 import static atrea.server.engine.networking.databases.NetworkOpcodes.*;
 
@@ -59,7 +58,7 @@ public class Session {
         getMessageSender().sendLogOut();
     }
 
-    public void authorize(LoginDetails loginDetails) {
+    public void authorize(LoginDetails loginDetails) throws SQLException {
         LoginResponse response = databaseManager.login(loginDetails);
 
         messageSender.sendLoginResponse(response.getCode());
@@ -79,7 +78,6 @@ public class Session {
 
         databaseManager.setSession(this);
 
-        System.out.println(account.getCharacters()[0].getGeneralData().getName());
         GameManager.getSessionManager().registerSession(account, this);
         GameManager.getSessionManager().getPlayerSession(userId).messageSender.send(new UpdateCharactersPacket(account.getCharacters()));
     }

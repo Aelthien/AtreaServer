@@ -6,6 +6,7 @@ import lombok.Getter;
 public class CharacterGeneralData {
     private @Getter String name;
     private @Getter EGender gender;
+    private @Getter int age;
     private @Getter int level;
     private @Getter int guild;
     private @Getter ELocation location;
@@ -13,11 +14,10 @@ public class CharacterGeneralData {
     public CharacterGeneralData() {
     }
 
-    public CharacterGeneralData(String name, EGender gender, int level, int guild, ELocation location) {
+    public CharacterGeneralData(String name, EGender gender, int age, ELocation location) {
         this.name = name;
         this.gender = gender;
-        this.level = level;
-        this.guild = guild;
+        this.age = age;
         this.location = location;
     }
 }

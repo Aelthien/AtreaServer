@@ -1,5 +1,6 @@
 package atrea.server.game.entities.ecs;
 
+import atrea.server.game.entities.Entity;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -15,5 +16,9 @@ public class ItemCreationComponent extends EntityComponent {
 
     public ItemCreationComponent(Entity parent) {
         super(parent);
+    }
+
+    @Override public void reset() {
+
     }
 }

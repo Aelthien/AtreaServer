@@ -3,10 +3,16 @@ package atrea.server.game.entities;
 import atrea.server.engine.main.GameManager;
 import atrea.server.engine.world.RegionManager;
 import atrea.server.game.content.items.Item;
+import atrea.server.game.content.skills.Skill;
 import atrea.server.game.entities.ecs.*;
 import atrea.server.game.entities.ecs.command.SpeechComponent;
+import atrea.server.game.entities.ecs.equipment.EquipmentComponent;
+import atrea.server.game.entities.ecs.inventory.InventoryComponent;
+import atrea.server.game.entities.ecs.skill.SkillsComponent;
+import atrea.server.game.entities.ecs.status.StatusComponent;
 import atrea.server.game.entities.ecs.systems.SystemManager;
-import atrea.server.game.entities.ecs.systems.TransformSystem;
+import atrea.server.game.entities.ecs.transform.TransformComponent;
+import atrea.server.game.entities.ecs.transform.TransformSystem;
 import io.netty.buffer.ByteBuf;
 
 import java.nio.charset.Charset;
@@ -17,7 +23,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static atrea.server.engine.networking.packet.outgoing.OutgoingPacketConstants.SEND_ENTITY_STATUS;
-import static atrea.server.game.entities.EEntityType.Player;
+import static atrea.server.game.entities.EInteractableType.PLAYER;
 import static atrea.server.game.entities.ecs.EComponentType.*;
 import static atrea.server.game.entities.ecs.EComponentUpdateType.DO_NOT_UPDATE_CLIENT;
 
@@ -105,7 +111,7 @@ public class EntityUpdating {
         currentBuffer.writeInt(entity.getEntityId());
         currentBuffer.writeByte(entity.getEntityType().ordinal());
 
-        if (entity.getEntityType() != Player)
+        if (entity.getEntityType() != PLAYER)
             currentBuffer.writeInt(entity.getDefinitionId());
         else {
             currentBuffer.writeBoolean(entity == currentPlayer);
@@ -142,6 +148,9 @@ public class EntityUpdating {
                 case SPEECH:
                     //addSpeechData(entityId);
                     break;
+                case SKILLS:
+                    addSkillsData(entityId);
+                    break;
                 case STATUS:
                     //addStatusData(entityId);
                     break;
@@ -160,6 +169,34 @@ public class EntityUpdating {
         }
     }
 
+    private void addSkillsData(int entityId) {
+        SkillsComponent skills = systemManager.getSkillsSystem().getComponent(entityId);
+
+        Skill[] skillsArray = skills.getSkills();
+
+        currentBuffer.writeByte(SKILLS.ordinal());
+
+        int writeIndex = currentBuffer.writerIndex();
+
+        currentBuffer.writeByte(skillsArray.length);
+
+        int updateCount = 0;
+
+        for (Skill skill : skillsArray) {
+            if (skill.isNeedsUpdate()) {
+                currentBuffer.writeByte(skill.getSkill().ordinal());
+                currentBuffer.writeByte(skill.getCurrentLevel());
+                //currentBuffer.writeByte(skill.getMaxLevel());
+                //currentBuffer.writeByte(skill.getExperience());
+                skill.setNeedsUpdate(false);
+
+                updateCount++;
+            }
+        }
+
+        currentBuffer.setByte(writeIndex, updateCount);
+    }
+
     private void addSpeechData(int entityId) {
         SpeechComponent speech = systemManager.getSpeechSystem().getComponent(entityId);
         currentBuffer.writeByte(SPEECH.ordinal());
@@ -170,13 +207,13 @@ public class EntityUpdating {
     private void addInventoryData(int entityId) {
         InventoryComponent inventory = systemManager.getInventorySystem().getComponent(entityId);
 
-        int inventorySize = inventory.getInventory().getSize();
+        int inventorySize = inventory.getItemContainer().getSize();
 
         currentBuffer.writeByte(INVENTORY.ordinal());
         currentBuffer.writeByte(inventorySize);
 
         for (int i = 0; i < inventorySize; i++) {
-            Item item = inventory.getInventory().getItem(i);
+            Item item = inventory.getItemContainer().getItem(i);
 
             currentBuffer.writeInt(item.getId());
 
@@ -192,11 +229,11 @@ public class EntityUpdating {
     private void addBankData(int entityId) {
         InventoryComponent inventory = systemManager.getInventorySystem().getComponent(entityId);
         currentBuffer.writeByte(INVENTORY.ordinal());
-        int inventorySize = inventory.getInventory().getSize();
+        int inventorySize = inventory.getItemContainer().getSize();
         currentBuffer.writeByte(inventorySize);
 
         for (int i = 0; i < inventorySize; i++) {
-            Item item = inventory.getInventory().getItem(i);
+            Item item = inventory.getItemContainer().getItem(i);
 
             if (item != null && item.isNeedsRefresh()) {
                 currentBuffer.writeInt(item.getId());
@@ -212,11 +249,11 @@ public class EntityUpdating {
     private void addEquipmentData(int entityId) {
         EquipmentComponent equipment = systemManager.getEquipmentSystem().getComponent(entityId);
         currentBuffer.writeByte(INVENTORY.ordinal());
-        int inventorySize = equipment.getEquipment().getSize();
+        int inventorySize = equipment.getItemContainer().getSize();
         currentBuffer.writeByte(inventorySize);
 
         for (int i = 0; i < inventorySize; i++) {
-            Item item = equipment.getEquipment().getItem(i);
+            Item item = equipment.getItemContainer().getItem(i);
 
             if (item != null) {
                 currentBuffer.writeInt(item.getId());
@@ -237,8 +274,8 @@ public class EntityUpdating {
         currentBuffer.writeByte(transform.getPosition().getHeight());
         currentBuffer.writeBoolean(transform.isTeleport());
         currentBuffer.writeBoolean(transform.isRunning());
-        currentBuffer.writeBoolean(transform.isPathEnd());
         currentBuffer.writeBoolean(transform.isResetQueue());
+        currentBuffer.writeBoolean(transform.isPathEnd());
     }
 
     public void addStatusData(int entityId) {

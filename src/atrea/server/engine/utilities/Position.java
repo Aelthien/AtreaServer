@@ -62,4 +62,8 @@ public class Position {
     public Position clone() {
         return new Position(x, y, height);
     }
+
+    public boolean equals(Position position) {
+        return this.x == position.x && this.y == position.y && this.height == position.height;
+    }
 }

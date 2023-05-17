@@ -1,7 +1,7 @@
 package atrea.server.game.content.combat;
 
 import atrea.server.game.entities.EDamageType;
-import atrea.server.game.entities.EntityStatusEffect;
+import atrea.server.game.entities.ecs.status.EntityStatusEffect;
 import lombok.Getter;
 
 public class AttackData {

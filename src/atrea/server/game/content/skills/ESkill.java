@@ -15,7 +15,8 @@ public enum ESkill {
     MINING(9,"mining"),
     SMITHING(10,"smithing"),
     WOODWORKING(11,"woodworking"),
-    LARCENY(12,"larceny");
+    LARCENY(12,"larceny"),
+    ANIMANCY(13,"animancy");
 
     private @Getter int index;
     private @Getter String name;

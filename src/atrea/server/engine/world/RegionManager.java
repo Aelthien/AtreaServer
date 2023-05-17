@@ -1,17 +1,17 @@
 package atrea.server.engine.world;
 
-import atrea.server.engine.main.GameManager;
 import atrea.server.engine.utilities.SpatialHashGrid;
 import atrea.server.game.ai.pathfinding.Tile;
 import atrea.server.engine.utilities.Position;
-import atrea.server.game.entities.EEntityType;
-import atrea.server.game.entities.ecs.Entity;
+import atrea.server.game.entities.EInteractableType;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.buffer.Unpooled;
 import lombok.Getter;
 
 import java.io.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class RegionManager {
 
@@ -149,7 +149,7 @@ public class RegionManager {
 
             while (entityDataBuffer.readableBytes() > 0) {
                 int entityId = entityDataBuffer.readUnsignedShort();
-                EEntityType entityType = EEntityType.integerToEnum(entityDataBuffer.readByte());
+                EInteractableType entityType = EInteractableType.values()[entityDataBuffer.readByte()];
                 int x = entityDataBuffer.readByte();
                 int y = entityDataBuffer.readByte();
 /*
@@ -184,5 +184,22 @@ public class RegionManager {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public static List<Position> getValidPositionsInRange(Position position, int radius) {
+        List<Position> positions = new ArrayList<>();
+        Region region = getRegion(position);
+
+        for (int x = position.getX() - radius; x < position.getX() + radius; x++) {
+            for (int y = position.getY() - radius; y < position.getY() + radius; y++) {
+                if (x < 0 || y < 0 || x >= WORLD_DIMENSION || y >= WORLD_DIMENSION || (x == position.getX() && y == position.getY()))
+                    continue;
+
+                if (region.getTiles()[0][x][y].isWalkable())
+                    positions.add(new Position(x, y));
+            }
+        }
+
+        return positions;
     }
 }

@@ -1,9 +1,8 @@
 package atrea.server.engine.networking.databases;
 
 import atrea.server.engine.accounts.*;
-import atrea.server.engine.utilities.Position;
 import atrea.server.game.content.items.Item;
-import atrea.server.game.entities.ecs.Entity;
+import atrea.server.game.entities.Entity;
 import atrea.server.game.entities.ecs.systems.SystemManager;
 import atrea.server.engine.main.GameManager;
 import atrea.server.engine.networking.packet.LoginDetails;
@@ -15,11 +14,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 import lombok.Setter;
 
-import java.io.ByteArrayInputStream;
-import java.nio.charset.Charset;
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.List;
 
 import static atrea.server.engine.networking.databases.NetworkOpcodes.*;
 
@@ -145,10 +140,16 @@ public class DatabaseManager {
         return response;
     }
 
+    /**
+     * Loads the character data from the database.
+     *
+     * @param characterIds The character ids to load.
+     * @return The character data array.
+     */
     public CharacterData[] loadCharacters(int[] characterIds) {
         CharacterData[] characters = new CharacterData[characterIds.length];
 
-        String sql = "SELECT slot, general, world FROM characters WHERE user_id = ? AND id in (?, ?, ?, ?)";
+        String sql = "SELECT slot, general FROM characters WHERE user_id = ? AND id in (?, ?, ?, ?)";
 
         try {
             statement = connection.prepareStatement(sql);
@@ -164,9 +165,10 @@ public class DatabaseManager {
             while (resultSet.next()) {
                 int slot = resultSet.getByte("slot");
 
-                List<Blob> datum = new ArrayList<>();
+                ByteBuf buffer = PooledByteBufAllocator.DEFAULT.buffer();
 
-                datum.add(resultSet.getBlob("general"));
+                CharacterGeneralData generalData = DataSerialisers.general.Deserialise(resultSet.getBlob("general"), buffer);
+
                 /*
                 datum.add(resultSet.getBlob("world"));
                 datum.add(resultSet.getBlob("skills"));
@@ -180,7 +182,8 @@ public class DatabaseManager {
                 datum.add(resultSet.getBlob("quests"));
                 */
 
-                characters[slot] = DataSerialiser.characters.deserialise(characterIds[slot], datum);
+                if (characterIds[slot] != -1)
+                    characters[slot] = new CharacterData(characterIds[slot], generalData, null, null, null, null);
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -246,29 +249,34 @@ public class DatabaseManager {
         try {
             ResultSet rs;
 
-            String sql = "SELECT general FROM characters WHERE id = ?";
+            String sql = "SELECT general, world, skills FROM characters WHERE id = ?";
 
             statement = connection.prepareStatement(sql);
             statement.setInt(1, characterData.getId());
 
             rs = statement.executeQuery();
 
+            ByteBuf buffer = PooledByteBufAllocator.DEFAULT.buffer();
+
             if (rs.next()) {
-                ByteBuf buffer = PooledByteBufAllocator.DEFAULT.buffer();
-                Blob blob = rs.getBlob("general");
-                buffer.writeBytes(blob.getBytes(1, (int) blob.length()));
+                CharacterGeneralData generalData = DataSerialisers.general.Deserialise(rs.getBlob("general"), buffer);
+                CharacterWorldData worldData = DataSerialisers.world.Deserialise(rs.getBlob("world"), buffer);
+                CharacterSkillsData skillsData = DataSerialisers.skills.Deserialise(rs.getBlob("skills"), buffer);
 
-                int nameLength = buffer.readByte();
-                String name = (String) buffer.readCharSequence(nameLength, Charset.defaultCharset());
+                //CharacterInventoryData inventoryData = DataSerialisers.inventory.Deserialise(rs.getBlob("inventory"), buffer);
+                //CharacterEquipmentData equipmentData = DataSerialisers.equipment.Deserialise(rs.getBlob("equipment"), buffer);
 
-                player.setName(name);
+                player.setName(generalData.getName());
 
-                systemManager.getMovementSystem().moveEntity(player.getEntityId(), new Position(0, 0, 0), false);
+                systemManager.getMovementSystem().moveEntity(player.getEntityId(), worldData);
+                systemManager.getSkillsSystem().setSkills(player.getEntityId(), skillsData);
+                /*systemManager.getInventorySystem().setInventory(player.getEntityId(), inventoryData);
+                systemManager.getEquipmentSystem().setEquipment(player.getEntityId(), equipmentData);
 
                 Item item = new Item(0, 1, true);
 
                 GameManager.getSystemManager().getInventorySystem().getComponent(player.getEntityId()).addItem(item, true);
-
+*/
                 success = true;
             } else {
                 success = false;
@@ -293,26 +301,32 @@ public class DatabaseManager {
      * the row that the character was inserted or 2) -1 if the
      * insertion failed.
      */
-    public CharacterData createCharacter(int slot, String name, EGender gender) {
+    public CharacterData createCharacter(int slot, String name, EGender gender, int age) {
         openConnection();
 
         if (session.getAccount().getCharacterIds()[slot] != -1)
             return null;
 
-        String sql = "INSERT INTO characters (user_id, slot, general) VALUES (?, ?, ?)";
+        String sql = "INSERT INTO characters (user_id, slot, general, world, skills) VALUES (?, ?, ?, ?, ?)";
 
-        CharacterData characterData = CharacterData.create(name, gender);
+        CharacterData characterData = CharacterData.create(name, gender, age);
 
-        try {;
-            List<byte[]> dataList = DataSerialiser.characters.serialise(characterData);
-
+        try {
             statement = connection.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS);
 
             statement.getGeneratedKeys();
 
+            ByteBuf buffer = PooledByteBufAllocator.DEFAULT.buffer();
+
+            System.out.println("Starting to serialise data");
             statement.setInt(1, userId);
             statement.setInt(2, slot);
-            statement.setBlob(3, new ByteArrayInputStream(dataList.get(0)));
+            statement.setBlob(3, DataSerialisers.general.Serialise(characterData.getGeneralData(), buffer));
+            System.out.println("Serialised general data");
+            statement.setBlob(4, DataSerialisers.world.Serialise(characterData.getWorldData(), buffer));
+            System.out.println("Serialised world data");
+            statement.setBlob(5, DataSerialisers.skills.Serialise(characterData.getSkillsData(), buffer));
+            System.out.println("Serialised skills data");
 
             if (statement.executeUpdate() != 0) {
                 ResultSet resultSet = statement.getGeneratedKeys();
@@ -343,16 +357,26 @@ public class DatabaseManager {
     }
 
     private boolean saveCharacter() {
-        String sql = "UPDATE characters SET general, skills, inventory, equipment WHERE userId = ?";
+        String sql = "UPDATE characters SET general, world, skills, inventory, equipment WHERE userId = ?";
 
         try {
             statement = connection.prepareStatement(sql);
 
-            //statement.setBlob(1, DatabaseSerializer.characters.serialise(player));
-            statement.setBlob(2, DataSerialiser.skills.serialiseAll(systemManager.getSkillSystem().getComponent(player.getEntityId()).getSkills()));
-            statement.setBlob(3, DataSerialiser.items.serialiseAll(systemManager.getInventorySystem().getComponent(player.getEntityId()).getInventory().getItems()));
-            statement.setBlob(4, DataSerialiser.items.serialiseAll(systemManager.getEquipmentSystem().getComponent(player.getEntityId()).getEquipment().getItems()));
-            statement.setInt(5, userId);
+            ByteBuf buffer = PooledByteBufAllocator.DEFAULT.directBuffer();
+
+            CharacterGeneralData generalData = session.getAccount().getCurrentCharacterData().getGeneralData();
+            CharacterWorldData worldData = session.getAccount().getCurrentCharacterData().getWorldData();
+            CharacterSkillsData skillsData = new CharacterSkillsData(systemManager.getSkillsSystem().getComponent(player.getEntityId()));
+            CharacterInventoryData inventoryData = new CharacterInventoryData(systemManager.getInventorySystem().getComponent(player.getEntityId()));
+            CharacterEquipmentData equipmentData = new CharacterEquipmentData(systemManager.getEquipmentSystem().getComponent(player.getEntityId()));
+
+            statement.setBlob(1, DataSerialisers.general.Serialise(generalData, buffer));
+            statement.setBlob(2, DataSerialisers.world.Serialise(worldData, buffer));
+            statement.setBlob(3, DataSerialisers.skills.Serialise(skillsData, buffer));
+            statement.setBlob(4, DataSerialisers.inventory.Serialise(inventoryData, buffer));
+            statement.setBlob(5, DataSerialisers.equipment.Serialise(equipmentData, buffer));
+
+            statement.setInt(6, userId);
 
             int response = statement.executeUpdate();
 

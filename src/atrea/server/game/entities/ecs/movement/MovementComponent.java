@@ -2,7 +2,7 @@ package atrea.server.game.entities.ecs.movement;
 
 import atrea.server.engine.utilities.Position;
 import atrea.server.game.entities.ecs.EComponentType;
-import atrea.server.game.entities.ecs.Entity;
+import atrea.server.game.entities.Entity;
 import atrea.server.game.entities.ecs.EntityComponent;
 import lombok.Getter;
 import lombok.Setter;
@@ -63,5 +63,13 @@ public class MovementComponent extends EntityComponent {
         target = movementQueue.poll();
 
         return target;
+    }
+
+    public void reset() {
+        resetQueue = false;
+    }
+
+    public void addPathPosition(Position target, boolean bTeleport) {
+        movementQueue.add(new MovementTarget(target, bTeleport));
     }
 }

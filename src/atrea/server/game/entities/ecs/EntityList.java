@@ -1,5 +1,6 @@
 package atrea.server.game.entities.ecs;
 
+import atrea.server.game.entities.Entity;
 import lombok.Getter;
 
 import java.util.*;

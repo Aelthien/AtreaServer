@@ -12,7 +12,7 @@ public class PacketListeners extends IncomingPacketConstants {
         LISTENERS[CREATE_CHARACTER] = new CreateCharacterPacketListener();
         LISTENERS[TILE_CLICK] = new TileClickListener();
         LISTENERS[PLAY_CHARACTER] = new PlayCharacterPacketListener();
-        LISTENERS[ENTITY_CLICK] = new EntityActionPacketListener();
+        LISTENERS[ENTITY_CLICK] = new InteractionPacketListener();
         LISTENERS[PING] = new PingPacketListener();
     }
 

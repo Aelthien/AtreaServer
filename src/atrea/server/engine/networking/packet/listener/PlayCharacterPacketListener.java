@@ -1,9 +1,6 @@
 package atrea.server.engine.networking.packet.listener;
 
 import atrea.server.engine.accounts.CharacterData;
-import atrea.server.game.entities.EEntityType;
-import atrea.server.game.entities.ecs.Entity;
-import atrea.server.engine.main.GameManager;
 import atrea.server.engine.networking.packet.outgoing.EnterGamePacket;
 import atrea.server.engine.networking.session.ESessionState;
 import atrea.server.engine.networking.session.Session;

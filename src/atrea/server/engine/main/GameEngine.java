@@ -44,7 +44,7 @@ public class GameEngine implements Runnable {
 
         GameManager.update();
 
-        //System.out.println("Tick: " + currentTick);
+//        System.out.println("Tick: " + currentTick);
 
         currentTick++;
     }

@@ -1,8 +1,10 @@
 package atrea.server.game.entities.ecs.systems;
 
-import atrea.server.game.entities.ecs.Entity;
+import atrea.server.game.entities.Entity;
 import atrea.server.game.data.definition.ComponentDefinition;
 import atrea.server.game.entities.ecs.ItemCreationComponent;
+import atrea.server.game.entities.ecs.inventory.InventorySystem;
+import atrea.server.game.entities.ecs.skill.SkillsSystem;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -12,9 +14,9 @@ public class ItemCreationSystem extends ComponentSystem {
     private Map<Integer, ItemCreationComponent> components = new HashMap<>();
 
     private InventorySystem inventorySystem;
-    private SkillSystem skillSystem;
+    private SkillsSystem skillSystem;
 
-    public void initialize(InventorySystem inventorySystem, SkillSystem skillSystem) {
+    public void initialize(InventorySystem inventorySystem, SkillsSystem skillSystem) {
         System.out.println("Initializing item creation system.");
         this.inventorySystem = inventorySystem;
         this.skillSystem = skillSystem;

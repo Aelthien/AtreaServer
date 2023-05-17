@@ -1,10 +1,21 @@
 package atrea.server.game.entities.ecs.systems;
 
-import atrea.server.game.entities.ecs.Entity;
+import atrea.server.game.entities.Entity;
 import atrea.server.game.entities.ecs.EComponentType;
 import atrea.server.game.data.definition.ComponentDefinition;
-import atrea.server.game.entities.ecs.EntityManager;
+import atrea.server.game.entities.EntityManager;
+import atrea.server.game.entities.ecs.bank.BankSystem;
+import atrea.server.game.entities.ecs.chat.ChatSystem;
+import atrea.server.game.entities.ecs.combat.CombatSystem;
 import atrea.server.game.entities.ecs.command.ScriptSystem;
+import atrea.server.game.entities.ecs.equipment.EquipmentSystem;
+import atrea.server.game.entities.ecs.guild.GuildSystem;
+import atrea.server.game.entities.ecs.interaction.InteractionSystem;
+import atrea.server.game.entities.ecs.inventory.InventorySystem;
+import atrea.server.game.entities.ecs.movement.MovementSystem;
+import atrea.server.game.entities.ecs.skill.SkillsSystem;
+import atrea.server.game.entities.ecs.status.StatusSystem;
+import atrea.server.game.entities.ecs.transform.TransformSystem;
 import lombok.Getter;
 
 import java.util.HashMap;
@@ -20,7 +31,7 @@ public class SystemManager {
     private @Getter final InventorySystem inventorySystem;
     private @Getter final BankSystem bankSystem;
     private @Getter final EquipmentSystem equipmentSystem;
-    private @Getter final SkillSystem skillSystem;
+    private @Getter final SkillsSystem skillsSystem;
     private @Getter final ItemCreationSystem itemCreationSystem;
     private @Getter final StatusSystem statusSystem;
     private @Getter final ChatSystem chatSystem;
@@ -39,7 +50,7 @@ public class SystemManager {
         componentSystems.put(INVENTORY, inventorySystem = new InventorySystem());
         componentSystems.put(BANK, bankSystem = new BankSystem());
         componentSystems.put(EQUIPMENT, equipmentSystem = new EquipmentSystem());
-        componentSystems.put(SKILL, skillSystem = new SkillSystem());
+        componentSystems.put(SKILLS, skillsSystem = new SkillsSystem());
         componentSystems.put(ITEM_CREATION, itemCreationSystem = new ItemCreationSystem());
         componentSystems.put(STATUS, statusSystem = new StatusSystem());
         componentSystems.put(CHAT, chatSystem = new ChatSystem());
@@ -51,9 +62,9 @@ public class SystemManager {
 
         movementSystem.initialize(transformSystem, statusSystem);
         inventorySystem.initialize(bankSystem, equipmentSystem);
-        equipmentSystem.initialize(inventorySystem, bankSystem, skillSystem, statusSystem);
+        equipmentSystem.initialize(inventorySystem, bankSystem, skillsSystem, statusSystem);
         bankSystem.initialize(inventorySystem, equipmentSystem);
-        itemCreationSystem.initialize(inventorySystem, skillSystem);
+        itemCreationSystem.initialize(inventorySystem, skillsSystem);
         statusSystem.initialize(combatSystem);
         combatSystem.initialize(statusSystem);
     }
@@ -65,5 +76,11 @@ public class SystemManager {
     public void addComponent(ComponentDefinition definition, Entity entity) {
         componentSystems.get(definition.getType()).addComponent(definition, entity);
         entity.addUpdateFlag(definition.getType());
+    }
+
+    public void resetSystems() {
+        for (ComponentSystem<?> system : componentSystems.values()) {
+            system.reset();
+        }
     }
 }

@@ -1,7 +1,5 @@
 package atrea.server.game.entities;
 
-import atrea.server.game.entities.ecs.Entity;
-
 import java.sql.Connection;
 
 public abstract class DatabaseProcedure

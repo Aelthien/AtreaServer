@@ -203,6 +203,9 @@ public class ItemContainer {
         if (!item.isValid())
             return false;
 
+        if (item.getSlot() < 0 || item.getSlot() >= size)
+            return false;
+
         items[slot] = item;
 
         return true;
@@ -214,6 +217,29 @@ public class ItemContainer {
 
     public boolean isEmpty() {
         return findEmptySlot() == -1;
+    }
+
+    public void removeItem(Item item, boolean refresh) {
+        removeItem(item.getId(), item.getAmount(), refresh);
+    }
+
+    public void removeItem(Item item) {
+        removeItem(item.getId(), item.getAmount(), false);
+    }
+
+    public void addItem(Item item, boolean refresh) {
+        addItem(item.getId(), item.getAmount(), refresh);
+    }
+
+    private void addItem(int itemId, int amount, boolean refresh) {
+        addItem(new Item(itemId, amount, refresh));
+    }
+
+    public void setItem(Item item) {
+        if (item.getSlot() == -1)
+            addItemToNewStack(item);
+        else
+            setItem(item, item.getSlot());
     }
 
     public enum EContainerType {

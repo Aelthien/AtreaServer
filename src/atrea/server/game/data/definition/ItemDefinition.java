@@ -2,7 +2,8 @@ package atrea.server.game.data.definition;
 
 import atrea.server.game.content.items.EEquipmentSlot;
 import atrea.server.game.content.items.EItemType;
-import atrea.server.game.entities.EntityStatusEffect;
+import atrea.server.game.content.items.RequiredSkill;
+import atrea.server.game.entities.ecs.status.EntityStatusEffect;
 import lombok.Getter;
 
 import java.util.ArrayList;
@@ -24,6 +25,6 @@ public class ItemDefinition {
     private @Getter boolean stackable;
     private @Getter int maxStack;
     private @Getter int maxStorageStack;
-    private @Getter
-    EEquipmentSlot equipmentSlot;
+    private @Getter EEquipmentSlot equipmentSlot;
+    private @Getter RequiredSkill[] requiredSkills;
 }

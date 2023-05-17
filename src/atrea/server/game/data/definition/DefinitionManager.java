@@ -12,6 +12,7 @@ public class DefinitionManager {
     private static EntityDefinition[] entityDefinitions = new EntityDefinition[10000];
     private static ItemDefinition[] itemDefinitions = new ItemDefinition[10000];
     private static RecipeDefinition[] recipeDefinitions;
+    private static SummonDefinition[] summonDefinitions = new SummonDefinition[10000];
 
     private static <T> T load(String definition, Class type, Gson gson) throws FileNotFoundException {
         FileReader reader = new FileReader(DEFINITION_PATH + definition + "Definitions.json");
@@ -28,6 +29,7 @@ public class DefinitionManager {
             entityDefinitions = load("Entity", EntityDefinition[].class, gson);
             itemDefinitions = load("item", ItemDefinition[].class, gson);
             // recipeDefinitions = load("recipe", recipeDefinitions.getClass(), gson);
+            //summonDefinitions = load("summon", SummonDefinition[].class, gson);
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
@@ -45,6 +47,8 @@ public class DefinitionManager {
     public static RecipeDefinition getRecipeDefinition(int id) {
         return recipeDefinitions[id];
     }
+
+    public static SummonDefinition getSummonDefinition(int id) { return summonDefinitions[id]; }
 
     public static void initialize() {
         loadDefinitions();

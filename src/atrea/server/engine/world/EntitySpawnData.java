@@ -1,7 +1,7 @@
 package atrea.server.engine.world;
 
 import atrea.server.engine.utilities.Position;
-import atrea.server.game.entities.ecs.EFacing;
+import atrea.server.game.entities.ecs.transform.EFacing;
 import lombok.Getter;
 
 public class EntitySpawnData {

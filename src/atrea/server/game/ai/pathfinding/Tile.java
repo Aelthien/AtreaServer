@@ -7,7 +7,8 @@ public class Tile {
 
     private @Getter int x, y;
     private @Getter int level;
-    private @Getter @Setter boolean walkable;
+    private @Getter
+    @Setter boolean walkable;
 
     public Tile(int x, int y, int level, int tileType, boolean walkable) {
         this.x = x;

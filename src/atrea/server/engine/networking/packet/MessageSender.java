@@ -1,11 +1,11 @@
 package atrea.server.engine.networking.packet;
 
 import atrea.server.engine.accounts.Account;
-import atrea.server.game.entities.ecs.Entity;
-import atrea.server.game.entities.ecs.EntityManager;
+import atrea.server.game.entities.Entity;
+import atrea.server.game.entities.EntityManager;
 import atrea.server.engine.main.GameManager;
 import atrea.server.engine.networking.packet.outgoing.OutgoingPacket;
-import atrea.server.game.entities.ecs.ChatMessage;
+import atrea.server.game.entities.ecs.chat.ChatMessage;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
